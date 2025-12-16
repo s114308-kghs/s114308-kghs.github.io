@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>🍡 搗麻糬遊戲</title>
+
   <style>
     body {
       margin: 0;
@@ -11,12 +12,12 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      background: #f6efe7;
+      background: #f3ede4;
       font-family: system-ui, sans-serif;
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     p {
@@ -24,30 +25,37 @@
       color: #555;
     }
 
-    /* 麻糬本體 */
+    /* 🍡 麻糬本體（純白，不是字元） */
     #mochi {
-      height: 120px;
       width: 160px;
-      background: #ffffff;
+      height: 120px;
+      background: white;
       border-radius: 60px;
       margin: 40px 0;
+
+      /* 讓它看起來很糯、很Q */
       box-shadow:
-        inset -8px -8px 16px rgba(255,255,255,0.9),
-        inset 8px 8px 16px rgba(200,200,200,0.5);
-      transition: width 0.15s ease, transform 0.1s ease;
+        inset -10px -10px 20px rgba(255,255,255,0.9),
+        inset 10px 10px 20px rgba(200,200,200,0.5);
+
+      transition:
+        width 0.15s ease,
+        transform 0.1s ease;
     }
 
     #msg {
-      font-size: 1.1rem;
       height: 1.5em;
+      font-size: 1.1rem;
     }
   </style>
 </head>
+
 <body>
 
   <h1>🍡 搗麻糬</h1>
   <p>按「空白鍵」搗麻糬</p>
 
+  <!-- 麻糬不是文字，是一個白色 div -->
   <div id="mochi"></div>
 
   <div id="msg">準備好了嗎？</div>
@@ -57,25 +65,26 @@
     const msg = document.getElementById("msg");
 
     let width = 160;
-    const target = 420;
+    const maxWidth = 420;
 
     function pound() {
       width += 18;
       mochi.style.width = width + "px";
 
-      // 壓扁感
-      mochi.style.transform = "scaleY(0.92)";
+      // 被搗時的「壓扁 Q 彈感」
+      mochi.style.transform = "scaleY(0.9)";
       setTimeout(() => {
         mochi.style.transform = "scaleY(1)";
       }, 100);
 
-      if (width >= target) {
+      if (width >= maxWidth) {
         msg.textContent = "🎉 麻糬又白又Q，完成啦！";
       } else {
-        msg.textContent = "💥 咚！好Q！";
+        msg.textContent = "💥 咚！好好捏！";
       }
     }
 
+    // 空白鍵控制
     document.addEventListener("keydown", (e) => {
       if (e.code === "Space") {
         e.preventDefault();
@@ -86,3 +95,4 @@
 
 </body>
 </html>
+
