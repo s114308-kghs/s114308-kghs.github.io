@@ -1,24 +1,72 @@
-print("🍡 歡迎來到搗麻糬遊戲 🍡")
-print("玩法：按「空白鍵 + Enter」來搗麻糬")
-print("輸入 q + Enter 可退出\n")
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍡 搗麻糬小遊戲</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      background: #fff7e6;
+      padding-top: 60px;
+    }
+    h1 {
+      font-size: 2.5rem;
+    }
+    #mochi {
+      font-size: 2rem;
+      margin: 30px 0;
+      white-space: nowrap;
+    }
+    button {
+      font-size: 1.2rem;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 12px;
+      background: #ffb703;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #fb8500;
+    }
+    #msg {
+      margin-top: 20px;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🍡 搗麻糬遊戲</h1>
+  <p>👉 按「空白鍵」或點擊按鈕來搗麻糬</p>
 
-mochi_length = 3
-target = 15
+  <div id="mochi">===</div>
 
-while True:
-    print("麻糬長度：", "=" * mochi_length)
-    user_input = input("👉 搗麻糬！（空白鍵 + Enter）：")
+  <button onclick="pound()">咚！搗麻糬</button>
 
-    if user_input == "q":
-        print("👋 遊戲結束，下次再來搗麻糬！")
-        break
+  <div id="msg"></div>
 
-    if user_input == " ":
-        mochi_length += 1
-        print("💥 咚！麻糬變長了！\n")
-    else:
-        print("⚠️ 請按空白鍵再 Enter！\n")
+  <script>
+    let length = 3;
+    const target = 20;
 
-    if mochi_length >= target:
-        print("🎉 恭喜！麻糬搗完成啦！🍡🍡🍡")
-        break
+    function pound() {
+      length++;
+      document.getElementById("mochi").textContent = "=".repeat(length);
+
+      if (length >= target) {
+        document.getElementById("msg").textContent = "🎉 恭喜！麻糬搗完成啦！";
+      } else {
+        document.getElementById("msg").textContent = "💥 咚！麻糬變長了！";
+      }
+    }
+
+    // 空白鍵控制
+    document.addEventListener("keydown", function (event) {
+      if (event.code === "Space") {
+        event.preventDefault();
+        pound();
+      }
+    });
+  </script>
+</body>
+</html>
