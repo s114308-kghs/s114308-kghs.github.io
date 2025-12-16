@@ -1,0 +1,24 @@
+print("🍡 歡迎來到搗麻糬遊戲 🍡")
+print("玩法：按「空白鍵 + Enter」來搗麻糬")
+print("輸入 q + Enter 可退出\n")
+
+mochi_length = 3
+target = 15
+
+while True:
+    print("麻糬長度：", "=" * mochi_length)
+    user_input = input("👉 搗麻糬！（空白鍵 + Enter）：")
+
+    if user_input == "q":
+        print("👋 遊戲結束，下次再來搗麻糬！")
+        break
+
+    if user_input == " ":
+        mochi_length += 1
+        print("💥 咚！麻糬變長了！\n")
+    else:
+        print("⚠️ 請按空白鍵再 Enter！\n")
+
+    if mochi_length >= target:
+        print("🎉 恭喜！麻糬搗完成啦！🍡🍡🍡")
+        break
