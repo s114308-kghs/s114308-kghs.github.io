@@ -14,50 +14,37 @@
       font-size: 2.5rem;
     }
     #mochi {
-      font-size: 2rem;
+      display: inline-block;
+      padding: 20px 30px;
       margin: 30px 0;
-      white-space: nowrap;
+      background: #ffffff;
+      border-radius: 40px;
+      box-shadow: inset -6px -6px 12px rgba(255,255,255,0.8),
+                  inset 6px 6px 12px rgba(200,200,200,0.4);
+      transition: width 0.15s ease;
     }
-    button {
-      font-size: 1.2rem;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 12px;
-      background: #ffb703;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #fb8500;
-    }
-    #msg {
-      margin-top: 20px;
-      font-size: 1.1rem;
-    }
-  </style>
-</head>
-<body>
-  <h1>🍡 搗麻糬遊戲</h1>
-  <p>👉 按「空白鍵」或點擊按鈕來搗麻糬</p>
 
-  <div id="mochi">===</div>
+  <div id="mochi"></div>
 
   <button onclick="pound()">咚！搗麻糬</button>
 
   <div id="msg"></div>
 
   <script>
-    let length = 3;
-    const target = 20;
+    let length = 120; // 寬度（px）
+    const target = 360;
 
     function pound() {
-      length++;
-      document.getElementById("mochi").textContent = "=".repeat(length);
+      length += 15;
+      const mochi = document.getElementById("mochi");
+      mochi.style.width = length + "px";
 
       if (length >= target) {
-        document.getElementById("msg").textContent = "🎉 恭喜！麻糬搗完成啦！";
+        document.getElementById("msg").textContent = "🎉 麻糬被你搗得又白又Q！";
       } else {
-        document.getElementById("msg").textContent = "💥 咚！麻糬變長了！";
+        document.getElementById("msg").textContent = "💥 咚！麻糬被拉長了！";
       }
+    }
     }
 
     // 空白鍵控制
