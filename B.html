@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>🍡 搗麻糬小遊戲</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #3a2f2a, #1c1411);
+      font-family: system-ui, sans-serif;
+      color: #f5f5f5;
+      text-align: center;
+    }
+
+    h1 { margin-bottom: 6px; }
+    p { margin-top: 0; opacity: 0.8; }
+
+    /* 石臼 */
+    #mortar {
+      width: 260px;
+      height: 120px;
+      background: #5a5a5a;
+      border-radius: 0 0 140px 140px;
+      box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      padding-bottom: 20px;
+    }
+
+    /* 麻糬 */
+    #mochi {
+      width: 140px;
+      height: 100px;
+      background: #ffffff;
+      border-radius: 60px;
+      position: relative;
+      box-shadow:
+        inset -10px -10px 20px rgba(255,255,255,0.9),
+        inset 10px 10px 20px rgba(200,200,200,0.5);
+      transition: height 0.15s ease, transform 0.1s ease;
+    }
+
+    /* 豆豆眼 */
+    .eye {
+      width: 10px;
+      height: 14px;
+      background: #333;
+      border-radius: 50%;
+      position: absolute;
+      top: 35px;
+      transition: transform 0.1s ease;
+    }
+    .eye.left { left: 45px; }
+    .eye.right { right: 45px; }
+
+    /* 槌子 */
+    #mallet {
+      font-size: 3rem;
+      margin: 10px 0;
+      transition: transform 0.1s ease;
+    }
+
+    #controls { margin-top: 16px; }
+
+    button {
+      font-size: 1rem;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+
+    #msg {
+      height: 1.5em;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🍡 搗麻糬</h1>
+  <p>按「空白鍵」搗麻糬</p>
+
+  <div id="mallet">🔨</div>
+
+  <div id="mortar">
+    <div id="mochi">
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+    </div>
+  </div>
+
+  <div id="msg">準備好了嗎？</div>
+
+  <div id="controls">
+    <button onclick="resetGame()">🔄 重來</button>
+  </div>
+
+  <script>
+    const mochi = document.getElementById("mochi");
+    const mallet = document.getElementById("mallet");
+    const msg = document.getElementById("msg");
+    const eyes = document.querySelectorAll('.eye');
+
+    let height = 100;
+    const maxHeight = 260;
+
+    function playAh() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    }
+
+    function pound() {
+      if (height >= maxHeight) return;
+
+      height += 14;
+      mochi.style.height = height + "px";
+      mochi.style.transform = "scaleX(0.95)";
+      mallet.style.transform = "rotate(-25deg) translateY(10px)";
+      eyes.forEach(e => e.style.transform = `translateX(${Math.random()*6 - 3}px)`);
+      playAh();
+
+      setTimeout(() => {
+        mochi.style.transform = "scaleX(1)";
+        mallet.style.transform = "rotate(0deg) translateY(0)";
+        eyes.forEach(e => e.style.transform = "translateX(0)");
+      }, 100);
+
+      if (height >= maxHeight) {
+        msg.textContent = "🎉 麻糬完成！好Q！";
+      } else {
+        msg.textContent = "💥 阿～";
+      }
+    }
+
+    function resetGame() {
+      height = 100;
+      mochi.style.height = height + "px";
+      msg.textContent = "重新開始！";
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        pound();
+      }
+    });
+  </script>
+</body>
+</html>
