@@ -2,7 +2,8 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>🍡 搗麻糬小遊戲</title>
+  <title>🍡 搗麻糬小遊戲（手機友善版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
@@ -17,60 +18,66 @@
       text-align: center;
     }
 
-    h1 { margin-bottom: 6px; }
-    p { margin-top: 0; opacity: 0.8; }
+    h1 { margin-bottom: 6px; font-size: 2rem; }
+    p { margin-top: 0; opacity: 0.8; font-size: 1rem; }
 
-    /* 石臼 */
     #mortar {
-      width: 260px;
-      height: 120px;
+      width: 60vw;
+      max-width: 260px;
+      height: 25vw;
+      max-height: 120px;
       background: #5a5a5a;
-      border-radius: 0 0 140px 140px;
+      border-radius: 0 0 50% 50%;
       box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
       display: flex;
       justify-content: center;
       align-items: flex-end;
-      padding-bottom: 20px;
+      padding-bottom: 5vw;
     }
 
-    /* 麻糬 */
     #mochi {
-      width: 140px;
-      height: 100px;
+      width: 35vw;
+      max-width: 140px;
+      height: 20vw;
+      max-height: 100px;
       background: #ffffff;
-      border-radius: 60px;
+      border-radius: 50%;
       position: relative;
       box-shadow:
         inset -10px -10px 20px rgba(255,255,255,0.9),
         inset 10px 10px 20px rgba(200,200,200,0.5);
       transition: height 0.15s ease, transform 0.1s ease;
+      touch-action: manipulation;
     }
 
-    /* 豆豆眼 */
     .eye {
-      width: 10px;
-      height: 14px;
+      width: 6vw;
+      max-width: 10px;
+      height: 8vw;
+      max-height: 14px;
       background: #333;
       border-radius: 50%;
       position: absolute;
-      top: 35px;
+      top: 8vw;
+      max-top: 35px;
       transition: transform 0.1s ease;
     }
-    .eye.left { left: 45px; }
-    .eye.right { right: 45px; }
+    .eye.left { left: 10vw; max-left: 45px; }
+    .eye.right { right: 10vw; max-right: 45px; }
 
-    /* 槌子 */
     #mallet {
-      font-size: 3rem;
-      margin: 10px 0;
+      font-size: 10vw;
+      max-font-size: 3rem;
+      margin: 2vw 0;
       transition: transform 0.1s ease;
     }
 
     #controls { margin-top: 16px; }
 
     button {
-      font-size: 1rem;
-      padding: 8px 16px;
+      font-size: 4vw;
+      max-font-size: 1rem;
+      padding: 2vw 4vw;
       border-radius: 10px;
       border: none;
       cursor: pointer;
@@ -79,13 +86,15 @@
     #msg {
       height: 1.5em;
       margin-top: 10px;
+      font-size: 4vw;
+      max-font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
   <h1>🍡 搗麻糬</h1>
-  <p>按「空白鍵」搗麻糬</p>
+  <p>答對或點麻糬就可以搗</p>
 
   <div id="mallet">🔨</div>
 
@@ -108,8 +117,8 @@
     const msg = document.getElementById("msg");
     const eyes = document.querySelectorAll('.eye');
 
-    let height = 100;
-    const maxHeight = 260;
+    let height = 20; // 20vw 初始高度
+    const maxHeight = 50; // 50vw 最大高度
 
     function playAh() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -129,11 +138,11 @@
     function pound() {
       if (height >= maxHeight) return;
 
-      height += 14;
-      mochi.style.height = height + "px";
+      height += 2;
+      mochi.style.height = height + "vw";
       mochi.style.transform = "scaleX(0.95)";
-      mallet.style.transform = "rotate(-25deg) translateY(10px)";
-      eyes.forEach(e => e.style.transform = `translateX(${Math.random()*6 - 3}px)`);
+      mallet.style.transform = "rotate(-25deg) translateY(2vw)";
+      eyes.forEach(e => e.style.transform = `translateX(${Math.random()*2 - 1}vw)`);
       playAh();
 
       setTimeout(() => {
@@ -150,16 +159,26 @@
     }
 
     function resetGame() {
-      height = 100;
-      mochi.style.height = height + "px";
+      height = 20;
+      mochi.style.height = height + "vw";
       msg.textContent = "重新開始！";
     }
 
+    // 桌機鍵盤
     document.addEventListener("keydown", e => {
       if (e.code === "Space") {
         e.preventDefault();
         pound();
       }
+    });
+
+    // 手機觸控
+    mochi.addEventListener("touchstart", e => {
+      e.preventDefault();
+      pound();
+    });
+    mochi.addEventListener("click", e => {
+      pound();
     });
   </script>
 </body>
