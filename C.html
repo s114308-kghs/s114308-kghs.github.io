@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍡 麻糬遊戲 - 玻璃瓶版</title>
+  <style>
+    body {
+      margin:0;
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      background: #f0e4d7;
+      overflow: hidden;
+    }
+    h1 { margin:10px 0; }
+
+    #shelf {
+      display: grid;
+      grid-template-columns: repeat(9, 50px);
+      gap: 5px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .color-box {
+      width:50px;
+      height:50px;
+      border-radius:8px;
+      border:2px solid #555;
+      cursor:pointer;
+      transition: transform 0.1s;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      color:#333;
+    }
+    .color-box:hover { transform: scale(1.1); }
+
+    #selected-colors { margin-top:10px; height:30px; }
+
+    #glass-bottle {
+      width:120px;
+      height:160px;
+      border:4px solid #aaa;
+      border-radius:20px;
+      margin: 20px auto;
+      position: relative;
+      background: rgba(255,255,255,0.2);
+    }
+
+    #mochi-phase { display:none; flex-direction:column; align-items:center; margin-top:30px; }
+    #mortar { width:200px; height:100px; background:#5a5a5a; border-radius:0 0 100px 100px; display:flex; justify-content:center; align-items:flex-end; padding-bottom:10px; }
+    #mochi-main { width:100px; height:60px; background: #fff0f5; border-radius:50% 50% 60% 60%; position:relative; box-shadow: inset -8px -8px 16px rgba(255,255,255,0.9), inset 8px 8px 16px rgba(200,200,200,0.4); transition: height 0.15s, transform 0.1s; }
+    .eye { width:12px; height:16px; background:#333; border-radius:50%; position:absolute; top:18px; transition: transform 0.1s; }
+    .eye.left { left:28px; }
+    .eye.right { right:28px; }
+    #mallet { font-size:2.5rem; margin:10px 0; transition: transform 0.1s; }
+
+    #msg { margin-top:10px; height:1.5em; }
+    button { margin-top:10px; padding:5px 10px; border-radius:8px; border:none; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>🍡 麻糬遊戲</h1>
+  <p>按鍵 1~9 選擇顏色，最多選 3 次，麻糬顏色會混合!</p>
+
+  <div id="shelf"></div>
+  <div id="selected-colors"></div>
+
+  <div id="glass-bottle"></div>
+
+  <div id="mochi-phase">
+    <div id="mallet">🔨</div>
+    <div id="mortar">
+      <div id="mochi-main">
+        <div class="eye left"></div>
+        <div class="eye right"></div>
+      </div>
+    </div>
+    <div id="msg">準備好了嗎？</div>
+    <button onclick="resetGame()">🔄 重來</button>
+  </div>
+
+  <script>
+    function randomRichColor(){
+      const h = Math.floor(Math.random()*360);
+      const s = Math.floor(Math.random()*60 + 60);
+      const l = Math.floor(Math.random()*30 + 40);
+      return `hsl(${h}, ${s}%, ${l}%)`;
+    }
+
+    const colors = Array.from({length:9},()=>randomRichColor());
+    const shelf = document.getElementById('shelf');
+    const selectedDiv = document.getElementById('selected-colors');
+    const selectedColors = [];
+    const maxSelect = 3;
+
+    colors.forEach((c,i)=>{
+      const div = document.createElement('div');
+      div.className='color-box';
+      div.style.background=c;
+      div.dataset.key=i+1;
+      div.textContent = i+1;
+      shelf.appendChild(div);
+    });
+
+    function updateSelected(){
+      selectedDiv.innerHTML = '';
+      selectedColors.forEach(c=>{
+        const s = document.createElement('div');
+        s.style.display='inline-block';
+        s.style.width='30px';
+        s.style.height='30px';
+        s.style.background=c;
+        s.style.margin='0 2px';
+        selectedDiv.appendChild(s);
+      });
+    }
+
+    function hexToRgb(hex){
+      if(hex.startsWith('hsl')){
+        const vals = hex.match(/\d+/g).map(Number);
+        const h = vals[0]/360, s=vals[1]/100, l=vals[2]/100;
+        let r,g,b;
+        if(s===0){ r=g=b=l; }
+        else{
+          const q = l<0.5? l*(1+s) : l+s-l*s;
+          const p = 2*l - q;
+          const hue2rgb=(p,q,t)=>{
+            if(t<0) t+=1;
+            if(t>1) t-=1;
+            if(t<1/6) return p+(q-p)*6*t;
+            if(t<1/2) return q;
+            if(t<2/3) return p+(q-p)*(2/3-t)*6;
+            return p;
+          };
+          r=hue2rgb(p,q,h+1/3);
+          g=hue2rgb(p,q,h);
+          b=hue2rgb(p,q,h-1/3);
+        }
+        return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+      } else {
+        const bigint = parseInt(hex.slice(1),16);
+        return [(bigint>>16)&255, (bigint>>8)&255, bigint&255];
+      }
+    }
+
+    function mixColors(colorsArray){
+      const sum = colorsArray.reduce((acc, hex)=>{
+        const [r,g,b] = hexToRgb(hex);
+        return [acc[0]+r, acc[1]+g, acc[2]+b];
+      }, [0,0,0]);
+      const len = colorsArray.length;
+      return `rgb(${Math.round(sum[0]/len)}, ${Math.round(sum[1]/len)}, ${Math.round(sum[2]/len)})`;
+    }
+
+    function startMochiPhase(){
+      document.getElementById('shelf').style.display='none';
+      selectedDiv.style.display='none';
+      document.getElementById('glass-bottle').style.display='none';
+      document.getElementById('mochi-phase').style.display='flex';
+      mochiMain.style.backgroundColor = mixColors(selectedColors);
+      msg.textContent='開始搗麻糬！';
+    }
+
+    document.addEventListener('keydown', e=>{
+      if(['1','2','3','4','5','6','7','8','9'].includes(e.key)){
+        const index = parseInt(e.key)-1;
+        if(selectedColors.length<maxSelect){
+          selectedColors.push(colors[index]);
+          updateSelected();
+          if(selectedColors.length===maxSelect){
+            startMochiPhase();
+          }
+        }
+      } else if(e.key===' '){
+        if(document.getElementById('mochi-phase').style.display==='flex') pound();
+      }
+    });
+
+    const mochiMain = document.getElementById('mochi-main');
+    const mallet = document.getElementById('mallet');
+    const eyes = document.querySelectorAll('.eye');
+
+    function playAh(){
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(880,ctx.currentTime);
+      gain.gain.setValueAtTime(0.0001,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2,ctx.currentTime+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime+0.25);
+    }
+
+    function pound(){
+      mochiMain.style.height = parseInt(getComputedStyle(mochiMain).height)+10+'px';
+      mochiMain.style.transform='scaleX(0.95)';
+      mallet.style.transform='rotate(-25deg) translateY(10px)';
+      eyes.forEach(e=>e.style.transform=`translateX(${Math.random()*6-3}px)`);
+      playAh();
+      setTimeout(()=>{
+        mochiMain.style.transform='scaleX(1)';
+        mallet.style.transform='rotate(0deg) translateY(0)';
+        eyes.forEach(e=>e.style.transform='translateX(0)');
+      },100);
+    }
+
+    function resetGame(){
+      selectedColors.length=0;
+      updateSelected();
+      document.getElementById('shelf').style.display='grid';
+      selectedDiv.style.display='block';
+      document.getElementById('glass-bottle').style.display='block';
+      document.getElementById('mochi-phase').style.display='none';
+      mochiMain.style.height='60px';
+    }
+
+    mochiMain.addEventListener('click', pound);
+    mochiMain.addEventListener('touchstart', e=>{ e.preventDefault(); pound(); });
+  </script>
+</body>
+</html>
