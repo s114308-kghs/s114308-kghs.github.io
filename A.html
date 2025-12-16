@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>🍡 搗麻糬</title>
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #3a2f2a, #1c1411);
+      font-family: system-ui, sans-serif;
+      color: #f5f5f5;
+    }
+
+    h1 { margin-bottom: 6px; }
+    p { margin-top: 0; opacity: 0.8; }
+
+    /* 🍡 麻糬 */
+    #mochi {
+      width: 160px;
+      height: 120px;
+      background: #ffffff;
+      border-radius: 60px;
+      margin: 40px 0;
+      position: relative;
+
+      box-shadow:
+        inset -10px -10px 20px rgba(255,255,255,0.9),
+        inset 10px 10px 20px rgba(200,200,200,0.5);
+
+      transition: height 0.15s ease, transform 0.1s ease;
+    }
+
+    /* 豆豆眼 */
+    .eye {
+      width: 10px;
+      height: 14px;
+      background: #333;
+      border-radius: 50%;
+      position: absolute;
+      top: 40px;
+    }
+    .eye.left { left: 55px; }
+    .eye.right { right: 55px; }
+
+    /* 🔨 槌子 */
+    #mallet {
+      font-size: 3rem;
+      margin-top: -10px;
+      transition: transform 0.1s ease;
+    }
+
+    #msg {
+      height: 1.5em;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>🍡 搗麻糬</h1>
+  <p>按「空白鍵」搗麻糬</p>
+
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+  </div>
+
+  <div id="mallet">🔨</div>
+
+  <div id="msg">準備好了嗎？</div>
+
+  <script>
+    const mochi = document.getElementById("mochi");
+    const mallet = document.getElementById("mallet");
+    const msg = document.getElementById("msg");
+
+    let height = 120;
+    const maxHeight = 320;
+
+    function pound() {
+      height += 16;
+      mochi.style.height = height + "px";
+
+      // Q 彈壓扁感
+      mochi.style.transform = "scaleX(0.95)";
+      mallet.style.transform = "rotate(-25deg) translateY(10px)";
+
+      setTimeout(() => {
+        mochi.style.transform = "scaleX(1)";
+        mallet.style.transform = "rotate(0deg) translateY(0)";
+      }, 100);
+
+      if (height >= maxHeight) {
+        msg.textContent = "🎉 Q 彈麻糬完成！";
+      } else {
+        msg.textContent = "💥 咚！";
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        pound();
+      }
+    });
+  </script>
+
+</body>
+</html>
