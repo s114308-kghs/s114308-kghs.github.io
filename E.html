@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>小麻糬療癒工坊</title>
+    <style>
+        :root {
+            --bg-color: #fcf8f0;
+            --mochi-color: #ffffff;
+            --wood-color: #d2b48c;
+            --accent: #e9c46a;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            overflow: hidden;
+            touch-action: manipulation; /* 防止雙擊縮放 */
+        }
+
+        /* 彩色瓶子列 */
+        .shelf {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 10px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 15px;
+        }
+        .color-dot {
+            width: 25px; height: 25px; border-radius: 50%; border: 2px solid white; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .color-dot:active { transform: scale(1.2); }
+
+        .counter { font-size: 1.1rem; color: #8b5a2b; margin-bottom: 20px; background: white; padding: 5px 15px; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
+        .container { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+        .bowl {
+            width: 220px; height: 110px; background-color: var(--wood-color);
+            border-radius: 0 0 110px 110px; border-bottom: 10px solid #bc8f8f;
+            position: relative; z-index: 2;
+        }
+
+        .mochi {
+            width: 160px; height: 110px; background-color: var(--mochi-color);
+            border-radius: 50% 50% 30% 30%; position: absolute;
+            bottom: 25px; left: 30px; transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset -5px -10px 20px rgba(0,0,0,0.05);
+        }
+
+        .face { display: flex; gap: 30px; margin-top: 10px; transition: 0.2s; }
+        .eye { width: 10px; height: 10px; background: #444; border-radius: 50%; }
+        .blush { width: 18px; height: 10px; background: #ffb6c1; border-radius: 50%; position: absolute; bottom: 40px; }
+
+        .pestle {
+            position: absolute; width: 45px; height: 130px; background: #e3c191;
+            top: -160px; left: 85px; border-radius: 12px; transform-origin: bottom center;
+            pointer-events: none; opacity: 0; transition: 0.1s; z-index: 3;
+        }
+
+        .float-text {
+            position: absolute; font-size: 22px; color: #d2a679; font-weight: bold;
+            animation: floatUp 0.8s ease-out forwards; pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
+        }
+
+        /* 點擊動態 */
+        .active .mochi { transform: scaleY(0.5) translateY(50px); filter: brightness(0.95); }
+        .active .pestle { opacity: 1; transform: translateY(135px); }
+        .active .face { transform: scaleX(1.3); }
+
+    </style>
+</head>
+<body>
+
+    <div class="shelf">
+        <div class="color-dot" style="background: #ffffff;" onclick="changeColor('#ffffff')"></div>
+        <div class="color-dot" style="background: #ffcfdf;" onclick="changeColor('#ffcfdf')"></div>
+        <div class="color-dot" style="background: #d4f0f0;" onclick="changeColor('#d4f0f0')"></div>
+        <div class="color-dot" style="background: #e1f8d0;" onclick="changeColor('#e1f8d0')"></div>
+        <div class="color-dot" style="background: #fdf2d5;" onclick="changeColor('#fdf2d5')"></div>
+    </div>
+
+    <div class="counter">療癒力: <span id="score">0</span></div>
+
+    <div class="container" id="gameArea">
+        <div class="pestle"></div>
+        <div class="mochi" id="mochi">
+            <div class="blush" style="left: 25px;"></div>
+            <div class="face">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+            <div class="blush" style="right: 25px;"></div>
+        </div>
+        <div class="bowl"></div>
+    </div>
+
+    <p style="margin-top: 40px; color: #a67c52; font-size: 0.9rem;">~ 揉一揉，心情變軟了 ~</p>
+
+    <script>
+        let count = 0;
+        const gameArea = document.getElementById('gameArea');
+        const scoreDisplay = document.getElementById('score');
+        const mochi = document.getElementById('mochi');
+        const words = ["阿姆~", "呼~", "軟綿綿", "Q彈!", "好讚", "再一下"];
+
+        function handleHit(e) {
+            e.preventDefault();
+            count++;
+            scoreDisplay.innerText = count;
+            gameArea.classList.add('active');
+
+            // 手機震動回饋 (僅限 Android 或部分支援的裝置)
+            if (navigator.vibrate) navigator.vibrate(10);
+
+            // 產生文字
+            const text = document.createElement('div');
+            text.className = 'float-text';
+            text.innerText = words[Math.floor(Math.random() * words.length)];
+            const rect = gameArea.getBoundingClientRect();
+            text.style.left = (Math.random() * 100 + 40) + 'px';
+            text.style.top = '0px';
+            gameArea.appendChild(text);
+
+            setTimeout(() => { gameArea.classList.remove('active'); }, 100);
+            setTimeout(() => { text.remove(); }, 800);
+        }
+
+        function changeColor(color) {
+            mochi.style.backgroundColor = color;
+        }
+
+        // 監聽點擊與觸控
+        gameArea.addEventListener('touchstart', handleHit);
+        gameArea.addEventListener('mousedown', handleHit);
+    </script>
+</body>
+</html>
