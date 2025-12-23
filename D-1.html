@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🍡 ASMR 搗麻糬</title>
+  <style>
+    body{
+      margin:0; font-family:system-ui; background:radial-gradient(circle at top,#2b1b14,#120b08);
+      color:#fff; text-align:center; overflow:hidden;
+    }
+    h1{margin:16px 0; font-size:1.5rem}
+
+    #palette{
+      display:grid; grid-template-columns:repeat(9,40px); gap:8px;
+      justify-content:center; margin-bottom:10px;
+    }
+    .color{
+      width:40px; height:40px; border-radius:8px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; color:#fff; font-weight:bold;
+    }
+
+    #jar{
+      width:140px; height:200px; margin:10px auto;
+      border:4px solid rgba(255,255,255,.6);
+      border-radius:20px 20px 30px 30px;
+      background:rgba(255,255,255,.1);
+      position:relative; overflow:hidden;
+    }
+
+    #mochi{
+      position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      width:100px; height:60px;
+      background:#fff;
+      border-radius:50px/30px;
+      box-shadow: inset -8px -8px 16px rgba(255,255,255,.9), inset 6px 6px 14px rgba(200,200,200,.5);
+      transition: height .15s ease, transform .2s ease, background .3s ease;
+      overflow:hidden;
+    }
+    #mochi .eye{position:absolute; top:22px; width:8px; height:8px; background:#333; border-radius:50%; animation:wobble 1s infinite alternate}
+    .eye.left{left:20px} .eye.right{right:20px}
+
+    #mochi-stretch{
+      position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+      width:20px; height:0;
+      background:rgba(255,255,255,.7); border-radius:10px;
+      transition: height .2s ease;
+    }
+
+    @keyframes wobble{from{transform:translateY(0)} to{transform:translateY(2px)}}
+    @keyframes shine{from{box-shadow:0 0 10px rgba(255,255,255,.4)} to{box-shadow:0 0 25px rgba(255,255,255,.9)}}
+
+    #pound-area{
+      position:absolute; bottom:0; width:100%; height:260px;
+      display:flex; justify-content:center; align-items:flex-end; gap:60px;
+      pointer-events:none;
+    }
+    #bowl{width:220px; height:120px; background:linear-gradient(#9b6a3c,#6f4524); border-radius:0 0 120px 120px; box-shadow:inset 0 -10px 20px rgba(0,0,0,.4)}
+    #hammer{width:40px; height:160px; background:linear-gradient(#c89b6d,#8b5a2b); border-radius:20px; transform-origin:bottom center; transition:transform .1s ease; position:relative}
+    #hammer::before{content:""; position:absolute; top:-40px; left:-40px; width:120px; height:40px; background:linear-gradient(#b8834f,#7a4a21); border-radius:20}
+
+    button{margin:6px; padding:12px 20px; border:none; border-radius:10px; font-size:16px; cursor:pointer; touch-action: manipulation;}
+  </style>
+</head>
+<body>
+  <h1>🍡 ASMR 搗麻糬</h1>
+
+  <div id="palette"></div>
+
+  <div id="jar">
+    <div id="mochi">
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+      <div id="mochi-stretch"></div>
+    </div>
+  </div>
+
+  <button id="poundBtn">點我搗麻糬</button>
+  <button id="resetBtn">🔁 再來一次</button>
+
+  <div id="pound-area">
+    <div id="bowl"></div>
+    <div id="hammer"></div>
+  </div>
+
+  <audio id="voice" preload="auto">
+    <source src="https://cdn.jsdelivr.net/gh/joshua19881228/sound-effect/voice/asmr_whisper_ah.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    /* ===== 調色系統 ===== */
+    const palette=document.getElementById('palette');
+    const colors=['#ff595e','#ffca3a','#8ac926','#1982c4','#6a4c93','#f72585','#4cc9f0','#ffd166','#06d6a0'];
+    let mix=[0,0,0], picks=0;
+    colors.forEach((c,i)=>{
+      const d=document.createElement('div');
+      d.className='color'; d.style.background=c; d.textContent=i+1;
+      d.onclick=()=>{
+        if(picks>=3) return;
+        const rgb=parseInt(c.slice(1),16);
+        mix[0]+=rgb>>16&255; mix[1]+=rgb>>8&255; mix[2]+=rgb&255;
+        picks++;
+        if(picks===3){
+          const r=Math.round(mix[0]/3), g=Math.round(mix[1]/3), b=Math.round(mix[2]/3);
+          document.getElementById('mochi').style.background=`rgb(${r},${g},${b})`;
+        }
+      };
+      palette.appendChild(d);
+    });
+
+    /* ===== 搗麻糬 ===== */
+    let height=60, maxHeight=200;
+    const mochi=document.getElementById('mochi');
+    const stretch=document.getElementById('mochi-stretch');
+    const hammer=document.getElementById('hammer');
+    const voice=document.getElementById('voice');
+
+    function pound(){
+      height=Math.min(height+15,maxHeight);
+      mochi.style.height=height+'px';
+      mochi.style.borderRadius='50px/30px';
+      mochi.style.transform=height>170?'translateX(-50%) rotate(5deg)':'translateX(-50%)';
+      let stretchHeight=Math.min((height-60)/2,80);
+      stretch.style.height=stretchHeight+'px';
+
+      hammer.style.transform='rotate(-25deg)';
+      setTimeout(()=>{ hammer.style.transform='rotate(0deg)'; },120);
+
+      voice.currentTime=0;
+      voice.play().catch(()=>{});
+
+      if(height>=maxHeight) document.getElementById('jar').style.animation='shine 1s infinite alternate';
+
+      if(navigator.vibrate) navigator.vibrate(30);
+    }
+
+    document.getElementById('poundBtn').onclick=pound;
+    document.addEventListener('keydown',e=>{ if(e.code==='Space'){e.preventDefault(); pound();} });
+
+    document.getElementById('resetBtn').onclick=()=>{
+      height=60; picks=0; mix=[0,0,0];
+      mochi.style.height='60px'; mochi.style.transform='translateX(-50%)'; mochi.style.background='#fff';
+      stretch.style.height='0px';
+      document.getElementById('jar').style.animation='none';
+    };
+
+    // 自動慢慢填滿罐子
+    setInterval(()=>{
+      if(height<maxHeight){
+        height+=1;
+        mochi.style.height=height+'px';
+        let stretchHeight=Math.min((height-60)/2,80);
+        stretch.style.height=stretchHeight+'px';
+      }
+    },100);
+  </script>
+</body>
+</html>
+
