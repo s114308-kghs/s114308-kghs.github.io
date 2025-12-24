@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Game</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  background: #fafafa;
+}
+
+h1 { margin-bottom: .5rem; }
+
+button {
+  padding: .6rem 1.2rem;
+  margin: .4rem;
+  border-radius: 10px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  font-size: 1rem;
+}
+
+#menu p { margin-bottom: .5rem; }
+
+#grid {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+  margin: 1rem auto;
+  touch-action: none;
+}
+
+.cell {
+  width: min(9vw, 38px);
+  height: min(9vw, 38px);
+  background: #eee;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.cell.selected { background: #ffd966; }
+.cell.found { background: #8fd3a8; }
+
+#words {
+  list-style: none;
+  padding: 0;
+}
+
+#words li.found {
+  text-decoration: line-through;
+  color: gray;
+}
+
+#win {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+#win.show { display: flex; }
+
+#win div {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: 20px;
+  font-size: 1.6rem;
+  animation: pop
