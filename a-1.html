@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  touch-action: none;
+  margin: 1rem auto;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.cell.selected { background: #ffd966; }
+.cell.found { background: #8fd3a8; }
+
+#words li.found {
+  text-decoration: line-through;
+  color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+<p>拖曳選字（橫 / 直 / 斜）</p>
+
+<div id="grid"></div>
+
+<ul id="words"></ul>
+
+<script>
+const gridSize = 10;
+const words = ["APPLE", "CAT", "DOG", "MOCHI"];
+
+const directions = [
+  [1, 0], [0, 1], [1, 1],
+  [-1, 0], [0, -1], [-1, -1],
+  [1, -1], [-1, 1]
+];
+
+let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(""));
+let selected = [];
+let dragging = false;
+
+/* 放置單字 */
+function placeWords() {
+  words.forEach(word => {
+    let placed = false;
+
+    while (!placed) {
+      const dir = directions[Math.floor(Math.random() * directions.length)];
+      const row = Math.floor(Math.random() * gridSize);
+      const col = Math.floor(Math.random() * gridSize);
+
+      if (canPlace(word, row, col, dir)) {
+        for (let i = 0; i < word.length; i++) {
+          grid[row + dir[0] * i][col + dir[1] * i] = word[i];
+        }
+        placed = true;
+      }
+    }
+  });
+}
+
+/* 檢查是否可放 */
+function canPlace(word, r, c, dir) {
+  for (let i = 0; i < word.length; i++) {
+    const nr = r + dir[0] * i;
+    const nc = c + dir[1] * i;
+    if (nr < 0 || nc < 0 || nr >= gridSize || nc >= gridSize) return false;
+    if (grid[nr][nc] && grid[nr][nc] !== word[i]) return false;
+  }
+  return true;
+}
+
+/* 補隨機字母 */
+function fillGrid() {
+  for (let r = 0; r < gridSize; r++) {
+    for (let c = 0; c < gridSize; c++) {
+      if (!grid[r][c]) {
+        grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      }
+    }
+  }
+}
+
+/* 畫格子 */
+function renderGrid() {
+  const gridDiv = document.getElementById("grid");
+  gridDiv.innerHTML = "";
+
+  grid.forEach((row, r) => {
+    row.forEach((letter, c) => {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.textContent = letter;
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+
+      cell.addEventListener("pointerdown", () => {
+        clearSelection();
+        dragging = true;
+        selectCell(cell);
+      });
+
+      cell.addEventListener("pointerenter", () => {
+        if (dragging) selectCell(cell);
+      });
+
+      gridDiv.appendChild(cell);
+    });
+  });
+
+  document.addEventListener("pointerup", () => {
+    if (dragging) checkWord();
+    dragging = false;
+  });
+}
+
+/* 單字清單 */
+function renderWords() {
+  const ul = document.getElementById("words");
+  ul.innerHTML = "";
+  words.forEach(w => {
+    const li = document.createElement("li");
+    li.textContent = w;
+    li.id = "word-" + w;
+    ul.appendChild(li);
+  });
+}
+
+/* 選字 */
+function selectCell(cell) {
+  if (selected.includes(cell)) return;
+  selected.push(cell);
+  cell.classList.add("selected");
+}
+
+function clearSelection() {
+  selected.forEach(c => c.classList.remove("selected"));
+  selected = [];
+}
+
+/* 檢查 */
+function checkWord() {
+  const word = selected.map(c => c.textContent).join("");
+  const rev = word.split("").reverse().join("");
+
+  words.forEach(w => {
+    if (word === w || rev === w) {
+      selected.forEach(c => {
+        c.classList.remove("selected");
+        c.classList.add("found");
+      });
+      document.getElementById("word-" + w).classList.add("found");
+    }
+  });
+}
+
+/* 啟動 */
+placeWords();
+fillGrid();
+renderGrid();
+renderWords();
+</script>
+
+</body>
+</html>
