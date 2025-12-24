@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body {
+  font-family: system-ui;
+  text-align: center;
+  background: #f6f7fb;
+  padding: 20px;
+  margin: 0;
+}
+
+button {
+  padding: 10px 18px;
+  margin: 6px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background: #4f46e5;
+  color: white;
+}
+
+#grid {
+  display: grid;
+  gap: 4px;
+  margin: 20px auto;
+  touch-action: none;
+}
+
+.cell {
+  width: 44px;
+  height: 44px;
+  background: white;
+  border-radius: 6px;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cell.active { background: #fde68a; }
+.cell.found { background: #86efac; }
+
+#words span {
+  margin: 4px 8px;
+  display: inline-block;
+  font-weight: bold;
+}
+
+#win {
+  display: none;
+  font-size: 26px;
+  animation: pop 0.8s ease;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+
+<div id="menu">
+  <button onclick="start('junior')">國中會考</button>
+  <button onclick="start('senior')">高中學測</button>
+  <button onclick="start('custom')">自訂題目</button>
+</div>
+
+<div id="game" style="display:none;">
+  <div id="grid"></div>
+  <div id="words"></div>
+  <div id="win">🎉 全部完成！</div>
+  <button onclick="back()">返回</button>
+</div>
+
+<script>
+const LEVELS = {
+  junior: ["BOOK","READ","WORD","TEST"],
+  senior: ["ANALYSIS","CONTEXT","SYNTAX"]
+};
+
+const SIZE = 8;
+let words = [];
+let found = new Set();
+let grid = [];
+let selecting = false;
+let startCell, path = [];
+
+let audioCtx;
+
+/* ---------- 音效 ---------- */
+function beep(f, d=0.15){
+  if(!audioCtx) audioCtx=new (AudioContext||webkitAudioContext)();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.frequency.value=f; g.gain.value=0.1;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+d);
+}
+
+/* ---------- 開始 ---------- */
+function start(type){
+  found.clear();
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+  document.getElementById("win").style.display="none";
+
+  if(type==="custom"){
+    const input=prompt("輸入單字（逗號分隔）");
+    words=input?input.toUpperCase().split(","):[];
+  } else {
+    words=[...LEVELS[type]];
+  }
+
+  generateGrid();
+  renderWords();
+}
+
+/* ---------- 核心：隨機放字 ---------- */
+function generateGrid(){
+  grid=Array(SIZE*SIZE).fill("");
+  words.forEach(word=>placeWord(word));
+  grid=grid.map(c=>c||String.fromCharCode(65+Math.random()*26|0));
+  renderGrid();
+}
+
+const DIRS=[
+  [1,0],[-1,0],[0,1],[0,-1],
+  [1,1],[1,-1],[-1,1],[-1,-1]
+];
+
+function placeWord(word){
+  for(let t=0;t<100;t++){
+    const [dx,dy]=DIRS[Math.random()*8|0];
+    const x=Math.random()*SIZE|0;
+    const y=Math.random()*SIZE|0;
+
+    let ok=true;
+    for(let i=0;i<word.length;i++){
+      const nx=x+dx*i, ny=y+dy*i;
+      if(nx<0||ny<0||nx>=SIZE||ny>=SIZE) ok=false;
+      const idx=ny*SIZE+nx;
+      if(grid[idx] && grid[idx]!==word[i]) ok=false;
+    }
+    if(!ok) continue;
+
+    for(let i=0;i<word.length;i++){
+      const idx=(y+dy*i)*SIZE+(x+dx*i);
+      grid[idx]=word[i];
+    }
+    return;
+  }
+}
+
+/* ---------- 畫面 ---------- */
+function renderGrid(){
+  const g=document.getElementById("grid");
+  g.innerHTML="";
+  g.style.gridTemplateColumns=`repeat(${SIZE},1fr)`;
+  grid.forEach((l,i)=>{
+    const d=document.createElement("div");
+    d.className="cell"; d.textContent=l; d.dataset.i=i;
+    d.onpointerdown=()=>startSel(d);
+    d.onpointerenter=()=>moveSel(d);
+    d.onpointerup=endSel;
+    g.appendChild(d);
+  });
+}
+
+function renderWords(){
+  const w=document.getElementById("words");
+  w.innerHTML="";
+  words.forEach(word=>{
+    const s=document.createElement("span");
+    s.textContent=word; s.id="w_"+word;
+    w.appendChild(s);
+  });
+}
+
+/* ---------- 選字 ---------- */
+function startSel(c){
+  selecting=true; startCell=c; path=[c];
+  c.classList.add("active"); beep(500,0.05);
+}
+function moveSel(c){
+  if(!selecting) return;
+  clearActive();
+  path=getLine(startCell,c);
+  path.forEach(x=>x.classList.add("active"));
+}
+function endSel(){
+  if(!selecting) return;
+  selecting=false;
+  const w=path.map(c=>c.textContent).join("");
+  if(words.includes(w)&&!found.has(w)){
+    found.add(w);
+    path.forEach(c=>c.classList.add("found"));
+    document.getElementById("w_"+w).style.textDecoration="line-through";
+    beep(900);
+  }
+  clearActive();
+  if(found.size===words.length) win();
+}
+
+/* ---------- 工具 ---------- */
+function getLine(a,b){
+  const ai=+a.dataset.i, bi=+b.dataset.i;
+  const ax=ai%SIZE, ay=ai/SIZE|0;
+  const bx=bi%SIZE, by=bi/SIZE|0;
+  const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
+  if(!(dx===0||dy===0||Math.abs(bx-ax)===Math.abs(by-ay))) return [a];
+  const cells=[];
+  for(let x=ax,y=ay;;x+=dx,y+=dy){
+    cells.push(document.querySelector(`.cell[data-i='${y*SIZE+x}']`));
+    if(x===bx&&y===by) break;
+  }
+  return cells;
+}
+function clearActive(){
+  document.querySelectorAll(".cell").forEach(c=>c.classList.remove("active"));
+}
+function win(){
+  document.getElementById("win").style.display="block";
+  beep(1200,0.4);
+}
+function back(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("menu").style.display="block";
+}
+</script>
+
+</body>
+</html>
