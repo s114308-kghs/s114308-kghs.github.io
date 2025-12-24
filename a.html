@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+h1 {
+  margin-bottom: 0.5rem;
+}
+
+#game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  touch-action: none;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  user-select: none;
+  border-radius: 6px;
+}
+
+.cell.selected {
+  background: #ffd966;
+}
+
+.cell.found {
+  background: #8fd3a8;
+}
+
+#word-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#word-list li {
+  font-size: 1rem;
+}
+
+#word-list li.found {
+  text-decoration: line-through;
+  color: gray;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+
+<div id="game">
+  <div id="grid"></div>
+
+  <div id="word-list">
+    <h3>Find these words</h3>
+    <ul id="words"></ul>
+  </div>
+</div>
+
+<script>
+const gridSize = 10;
+const words = ["APPLE", "CAT", "DOG", "MOCHI"];
+
+const grid = document.getElementById("grid");
+const wordList = document.getElementById("words");
+
+let letters = [];
+let selectedCells = [];
+let isDragging = false;
+
+/* 建立隨機字母格 */
+function generateGrid() {
+  grid.innerHTML = "";
+  letters = [];
+
+  for (let i = 0; i < gridSize * gridSize; i++) {
+    const letter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    letters.push(letter);
+
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.textContent = letter;
+    cell.dataset.index = i;
+
+    grid.appendChild(cell);
+  }
+}
+
+/* 顯示單字 */
+function renderWords() {
+  wordList.innerHTML = "";
+  words.forEach(word => {
+    const li = document.createElement("li");
+    li.textContent = word;
+    li.id = "word-" + word;
+    wordList.appendChild(li);
+  });
+}
+
+/* 選字操作（手機＋電腦） */
+grid.addEventListener("pointerdown", e => {
+  if (!e.target.classList.contains("cell")) return;
+  clearSelection();
+  isDragging = true;
+  selectCell(e.target);
+});
+
+grid.addEventListener("pointerover", e => {
+  if (!isDragging) return;
+  if (e.target.classList.contains("cell")) {
+    selectCell(e.target);
+  }
+});
+
+document.addEventListener("pointerup", () => {
+  if (isDragging) checkWord();
+  isDragging = false;
+});
+
+/* 選取格子 */
+function selectCell(cell) {
+  if (selectedCells.includes(cell)) return;
+  selectedCells.push(cell);
+  cell.classList.add("selected");
+}
+
+/* 清除選取 */
+function clearSelection() {
+  selectedCells.forEach(c => c.classList.remove("selected"));
+  selectedCells = [];
+}
+
+/* 檢查是否為正確單字 */
+function checkWord() {
+  const word = selectedCells.map(c => c.textContent).join("");
+  const reversed = word.split("").reverse().join("");
+
+  words.forEach(w => {
+    if (word === w || reversed === w) {
+      selectedCells.forEach(c => {
+        c.classList.remove("selected");
+        c.classList.add("found");
+      });
+      document.getElementById("word-" + w).classList.add("found");
+    }
+  });
+}
+
+/* 初始化 */
+generateGrid();
+renderWords();
+</script>
+
+</body>
+</html>
