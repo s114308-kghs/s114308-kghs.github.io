@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+#grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  touch-action: none;
+  margin: 1rem auto;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.cell.selected { background: #ffd966; }
+.cell.found { background: #8fd3a8; }
+
+#words li.found {
+  text-decoration: line-through;
+  color: gray;
+}
+
+/* 🎉 結束動畫 */
+#win {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#win.show {
+  display: flex;
+  animation: fadeIn .5s;
+}
+
+#win div {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: 20px;
+  font-size: 1.5rem;
+  animation: pop .6s ease-out;
+}
+
+@keyframes pop {
+  0% { transform: scale(.5); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+<p>只能直線選字（橫 / 直 / 斜）</p>
+
+<div id="grid"></div>
+<ul id="words"></ul>
+
+<div id="win">
+  <div>🎉 全部找到了！🎉</div>
+</div>
+
+<script>
+const gridSize = 10;
+const words = ["APPLE", "CAT", "DOG", "MOCHI"];
+
+const directions = [
+  [1,0],[0,1],[1,1],[1,-1],
+  [-1,0],[0,-1],[-1,-1],[-1,1]
+];
+
+let grid = Array(gridSize).fill().map(()=>Array(gridSize).fill(""));
+let selected = [];
+let dragging = false;
+let direction = null;
+let foundCount = 0;
+
+/* 放單字 */
+function placeWords() {
+  words.forEach(word => {
+    let placed = false;
+    while (!placed) {
+      const dir = directions[Math.floor(Math.random()*directions.length)];
+      const r = Math.floor(Math.random()*gridSize);
+      const c = Math.floor(Math.random()*gridSize);
+      if (canPlace(word,r,c,dir)) {
+        for (let i=0;i<word.length;i++) {
+          grid[r+dir[0]*i][c+dir[1]*i] = word[i];
+        }
+        placed = true;
+      }
+    }
+  });
+}
+
+function canPlace(word,r,c,dir) {
+  for (let i=0;i<word.length;i++) {
+    const nr=r+dir[0]*i, nc=c+dir[1]*i;
+    if (nr<0||nc<0||nr>=gridSize||nc>=gridSize) return false;
+    if (grid[nr][nc] && grid[nr][nc]!==word[i]) return false;
+  }
+  return true;
+}
+
+/* 補字母 */
+function fillGrid() {
+  for (let r=0;r<gridSize;r++) {
+    for (let c=0;c<gridSize;c++) {
+      if (!grid[r][c]) {
+        grid[r][c] = String.fromCharCode(65+Math.random()*26);
+      }
+    }
+  }
+}
+
+/* 畫格 */
+function renderGrid() {
+  const g = document.getElementById("grid");
+  g.innerHTML = "";
+  grid.forEach((row,r)=>{
+    row.forEach((letter,c)=>{
+      const cell = document.createElement("div");
+      cell.className="cell";
+      cell.textContent=letter;
+      cell.dataset.r=r;
+      cell.dataset.c=c;
+
+      cell.onpointerdown=()=>{
+        clearSelection();
+        dragging=true;
+        direction=null;
+        select(cell);
+      };
+
+      cell.onpointerenter=()=>{
+        if (!dragging) return;
+        if (!direction && selected.length===1) {
+          direction = getDir(selected[0], cell);
+        }
+        if (isStraight(cell)) select(cell);
+      };
+
+      g.appendChild(cell);
+    });
+  });
+
+  document.onpointerup=()=>{
+    if (dragging) checkWord();
+    dragging=false;
+  };
+}
+
+/* 直線判斷 */
+function getDir(a,b) {
+  return [
+    Math.sign(b.dataset.r-a.dataset.r),
+    Math.sign(b.dataset.c-a.dataset.c)
+  ];
+}
+
+function isStraight(cell) {
+  if (!direction) return true;
+  const last = selected[selected.length-1];
+  return (
+    Number(cell.dataset.r)-Number(last.dataset.r) === direction[0] &&
+    Number(cell.dataset.c)-Number(last.dataset.c) === direction[1]
+  );
+}
+
+/* 選字 */
+function select(cell) {
+  if (selected.includes(cell)) return;
+  selected.push(cell);
+  cell.classList.add("selected");
+}
+
+function clearSelection() {
+  selected.forEach(c=>c.classList.remove("selected"));
+  selected=[];
+}
+
+/* 檢查 */
+function checkWord() {
+  const w = selected.map(c=>c.textContent).join("");
+  const r = w.split("").reverse().join("");
+
+  words.forEach(word=>{
+    if (w===word||r===word) {
+      selected.forEach(c=>{
+        c.classList.remove("selected");
+        c.classList.add("found");
+      });
+      document.getElementById("word-"+word).classList.add("found");
+      foundCount++;
+      if (foundCount===words.length) endGame();
+    }
+  });
+}
+
+/* 單字表 */
+function renderWords() {
+  const ul=document.getElementById("words");
+  ul.innerHTML="";
+  words.forEach(w=>{
+    const li=document.createElement("li");
+    li.id="word-"+w;
+    li.textContent=w;
+    ul.appendChild(li);
+  });
+}
+
+/* 結束動畫 */
+function endGame() {
+  document.getElementById("win").classList.add("show");
+}
+
+/* 啟動 */
+placeWords();
+fillGrid();
+renderGrid();
+renderWords();
+</script>
+
+</body>
+</html>
