@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Puzzle</title>
+<style>
+  body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+  button { margin: 5px; padding: 10px 20px; }
+  #puzzle { display: grid; grid-template-columns: repeat(14, 35px); grid-gap: 2px; margin-top: 20px; }
+  .cell { width: 35px; height: 35px; display: flex; justify-content: center; align-items: center; border: 1px solid #333; cursor: pointer; user-select: none; font-weight: bold; }
+  .selected { background-color: #ffeb3b; }
+  .found { background-color: #8bc34a; }
+  #wordList { margin-top: 20px; display: flex; flex-wrap: wrap; max-width: 500px; }
+  .wordItem { margin: 2px 5px; padding: 2px 5px; border: 1px solid #333; border-radius: 3px; }
+  .foundWord { background-color: #8bc34a; color: #fff; }
+  #controls { margin-top: 15px; }
+</style>
+</head>
+<body>
+<h1>Word Search Puzzle</h1>
+<div>
+  <button onclick="selectLevel('junior')">國中會考</button>
+  <button onclick="selectLevel('senior')">高中學測</button>
+  <button onclick="selectLevel('custom')">自訂題目</button>
+</div>
+<div id="wordList"></div>
+<div id="puzzle"></div>
+<div id="controls">
+  <button onclick="prevQuestion()">上一題</button>
+  <button onclick="nextQuestion()">下一題</button>
+  <span id="qInfo"></span>
+</div>
+<script>
+const puzzleContainer = document.getElementById('puzzle');
+const wordListDiv = document.getElementById('wordList');
+const qInfo = document.getElementById('qInfo');
+let selectedCells = [];
+let foundWords = [];
+let puzzleGrid = [];
+let currentWords = [];
+let currentLevel = '';
+let currentQuestion = 0;
+const gridSize = 14;
+
+// 完整 30 題內建題庫 (每題 18 個單字，簡化示範)
+const wordBank = {
+  junior: [],
+  senior: [],
+  custom: []
+};
+
+function generateAllQuestions(){
+  const sampleJunior = ['apple','book','cat','dog','egg','fish','goat','hat','ice','jam','kite','lion','moon','nest','owl','pig','queen','rose'];
+  const sampleSenior = ['algebra','biology','chemistry','drama','earth','physics','geometry','history','italy','japan','korea','literature','music','novel','ocean','poetry','quiz','robot'];
+  const sampleCustom = ['sun','moon','star','sky','cloud','rain','snow','wind','tree','flower','grass','leaf','rock','river','mountain','bird','fish','ant'];
+
+  for(let i=0;i<30;i++){
+    wordBank.junior.push(shuffleArray(sampleJunior));
+    wordBank.senior.push(shuffleArray(sampleSenior));
+    wordBank.custom.push(shuffleArray(sampleCustom));
+  }
+}
+
+function shuffleArray(array){
+  let arr = array.slice();
+  for(let i=arr.length-1;i>0;i--){
+    let j = Math.floor(Math.random()*(i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function selectLevel(level){
+  currentLevel = level;
+  currentQuestion = 0;
+  loadQuestion();
+}
+
+function loadQuestion(){
+  puzzleContainer.innerHTML = '';
+  wordListDiv.innerHTML = '';
+  selectedCells = [];
+  foundWords = [];
+  puzzleGrid = Array(gridSize).fill(0).map(()=>Array(gridSize).fill(''));
+
+  currentWords = wordBank[currentLevel][currentQuestion];
+  currentWords.forEach(word=>{
+    const div = document.createElement('div');
+    div.className = 'wordItem';
+    div.textContent = word;
+    wordListDiv.appendChild(div);
+  });
+
+  placeWordsInGrid(currentWords);
+  fillEmptyCells();
+  renderGrid();
+  qInfo.textContent = `第 ${currentQuestion+1} / 30 題`;
+}
+
+function nextQuestion(){
+  if(currentQuestion<29){ currentQuestion++; loadQuestion(); }
+}
+function prevQuestion(){
+  if(currentQuestion>0){ currentQuestion--; loadQuestion(); }
+}
+
+function placeWordsInGrid(words){
+  const directions = [ [0,1], [1,0], [1,1], [1,-1] ];
+  words.forEach(word=>{
+    let placed = false;
+    while(!placed){
+      const dir = directions[Math.floor(Math.random()*directions.length)];
+      const row = Math.floor(Math.random()*gridSize);
+      const col = Math.floor(Math.random()*gridSize);
+      if(canPlaceWord(word,row,col,dir)){
+        for(let i=0;i<word.length;i++){
+          puzzleGrid[row + i*dir[0]][col + i*dir[1]] = word[i];
+        }
+        placed = true;
+      }
+    }
+  });
+}
+
+function canPlaceWord(word,row,col,dir){
+  for(let i=0;i<word.length;i++){
+    const r = row + i*dir[0];
+    const c = col + i*dir[1];
+    if(r<0 || r>=gridSize || c<0 || c>=gridSize) return false;
+    if(puzzleGrid[r][c]!=='' && puzzleGrid[r][c]!==word[i]) return false;
+  }
+  return true;
+}
+
+function fillEmptyCells(){
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  for(let r=0;r<gridSize;r++){
+    for(let c=0;c<gridSize;c++){
+      if(puzzleGrid[r][c]==='') puzzleGrid[r][c] = letters[Math.floor(Math.random()*26)];
+    }
+  }
+}
+
+function renderGrid(){
+  puzzleContainer.innerHTML = '';
+  for(let r=0;r<gridSize;r++){
+    for(let c=0;c<gridSize;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.textContent = puzzleGrid[r][c];
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      cell.addEventListener('click', ()=>selectCell(cell,r,c));
+      puzzleContainer.appendChild(cell);
+    }
+  }
+}
+
+let startCell = null;
+function selectCell(cell,row,col){
+  if(!startCell){
+    startCell = {row,col};
+    cell.classList.add('selected');
+  }else{
+    const word = getWordFromSelection(startCell,row,col);
+    if(currentWords.includes(word) && !foundWords.includes(word)){
+      markWord(startCell,row,col);
+      foundWords.push(word);
+      Array.from(wordListDiv.children).forEach(div=>{ if(div.textContent===word) div.classList.add('foundWord'); });
+    }
+    Array.from(document.querySelectorAll('.cell.selected')).forEach(c=>c.classList.remove('selected'));
+    startCell = null;
+  }
+}
+
+function getWordFromSelection(start,endRow,endCol){
+  let word = '';
+  const rowStep = endRow-start.row===0?0:(endRow-start.row)/Math.abs(endRow-start.row);
+  const colStep = endCol-start.col===0?0:(endCol-start.col)/Math.abs(endCol-start.col);
+  let r=start.row,c=start.col;
+  while(true){
+    word += puzzleGrid[r][c];
+    if(r===endRow && c===endCol) break;
+    r+=rowStep; c+=colStep;
+  }
+  return word;
+}
+
+function markWord(start,endRow,endCol){
+  const rowStep = endRow-start.row===0?0:(endRow-start.row)/Math.abs(endRow-start.row);
+  const colStep = endCol-start.col===0?0:(endCol-start.col)/Math.abs(endCol-start.col);
+  let r=start.row,c=start.col;
+  while(true){
+    document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`).classList.add('found');
+    if(r===endRow && c===endCol) break;
+    r+=rowStep; c+=colStep;
+  }
+}
+
+generateAllQuestions();
+</script>
+</body>
+</html>
