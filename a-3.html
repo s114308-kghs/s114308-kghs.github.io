@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body{
+  font-family: system-ui;
+  text-align:center;
+  background:#f6f7fb;
+  margin:0;
+  padding:20px;
+}
+button{
+  padding:10px 18px;
+  margin:6px;
+  font-size:16px;
+  border-radius:8px;
+  border:none;
+  background:#4f46e5;
+  color:white;
+}
+#grid{
+  display:grid;
+  gap:4px;
+  margin:16px auto;
+  touch-action:none;
+}
+.cell{
+  background:white;
+  border-radius:6px;
+  font-size:20px;
+  font-weight:bold;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+.cell.active{background:#fde68a;}
+.cell.found{background:#86efac;}
+
+#words span{
+  margin:4px 6px;
+  display:inline-block;
+  font-weight:bold;
+}
+#win{
+  display:none;
+  font-size:26px;
+  animation:pop .8s ease;
+}
+@keyframes pop{
+  from{transform:scale(.5);opacity:0}
+  to{transform:scale(1);opacity:1}
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+
+<div id="menu">
+  <button onclick="startMode('junior')">國中會考（30關）</button>
+  <button onclick="startMode('senior')">高中學測（30關）</button>
+  <button onclick="startMode('custom')">自訂題目（9×15）</button>
+</div>
+
+<div id="game" style="display:none;">
+  <div id="levelInfo"></div>
+  <div id="grid"></div>
+  <div id="words"></div>
+  <div id="win">🎉 完成！</div>
+  <button id="nextBtn" onclick="nextLevel()">下一關</button>
+  <button onclick="backMenu()">返回選單</button>
+</div>
+
+<script>
+/* ========= 題庫 ========= */
+const WORD_BANK={
+  junior:[
+    "BOOK","READ","WORD","TEST","WRITE","STUDY","LEARN","CLASS","SCHOOL",
+    "NOTE","PAPER","GRADE","EXAM","TEACH","LANG","TEXT","IDEA","TIME","RULE"
+  ],
+  senior:[
+    "ANALYSIS","CONTEXT","SYNTAX","PARAGRAPH","ARGUMENT","INTERPRET",
+    "EVIDENCE","CONCLUSION","STRUCTURE","ABSTRACT","SEMANTIC","RHETORIC",
+    "CRITICAL","INFERENCE","COHERENCE","DISCOURSE"
+  ]
+};
+
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const MAX_LEVEL=30;
+
+/* ========= 狀態 ========= */
+let mode="", level=1;
+let ROWS=8, COLS=8;
+let words=[], found=new Set();
+let grid=[], selecting=false, startCell, path=[];
+let audioCtx;
+
+/* ========= 音效 ========= */
+function beep(f,d=.15){
+  if(!audioCtx) audioCtx=new (AudioContext||webkitAudioContext)();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.frequency.value=f; g.gain.value=.1;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+d);
+}
+
+/* ========= 模式 ========= */
+function startMode(m){
+  mode=m; level=1;
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+  loadLevel();
+}
+
+function loadLevel(){
+  found.clear();
+  document.getElementById("win").style.display="none";
+
+  if(mode==="custom"){
+    ROWS=9; COLS=15;
+    const input=prompt("輸入單字（用逗號分隔）");
+    words=input?input.toUpperCase().split(",").map(w=>w.trim()).filter(w=>w):[];
+    document.getElementById("levelInfo").textContent="自訂題目（9 × 15）";
+    document.getElementById("nextBtn").style.display="none";
+  }else{
+    ROWS=8; COLS=8;
+    const pool=[...WORD_BANK[mode]].sort(()=>Math.random()-.5);
+    words=pool.slice(0,4+Math.random()*2|0);
+    document.getElementById("levelInfo").textContent=
+      `${mode==="junior"?"國中會考":"高中學測"}　第 ${level} / ${MAX_LEVEL} 關`;
+    document.getElementById("nextBtn").style.display="inline-block";
+  }
+
+  generateGrid();
+  renderWords();
+}
+
+/* ========= 產生棋盤 ========= */
+function generateGrid(){
+  grid=Array(ROWS*COLS).fill("");
+  words.forEach(w=>placeWord(w));
+  grid=grid.map(c=>c||String.fromCharCode(65+Math.random()*26|0));
+  renderGrid();
+}
+
+function placeWord(word){
+  for(let t=0;t<200;t++){
+    const [dx,dy]=DIRS[Math.random()*8|0];
+    const x=Math.random()*COLS|0;
+    const y=Math.random()*ROWS|0;
+    let ok=true;
+    for(let i=0;i<word.length;i++){
+      const nx=x+dx*i, ny=y+dy*i;
+      if(nx<0||ny<0||nx>=COLS||ny>=ROWS) ok=false;
+      const idx=ny*COLS+nx;
+      if(grid[idx] && grid[idx]!==word[i]) ok=false;
+    }
+    if(!ok) continue;
+    for(let i=0;i<word.length;i++){
+      grid[(y+dy*i)*COLS+(x+dx*i)]=word[i];
+    }
+    return;
+  }
+}
+
+/* ========= 畫面 ========= */
+function renderGrid(){
+  const g=document.getElementById("grid");
+  g.innerHTML="";
+  g.style.gridTemplateColumns=`repeat(${COLS},1fr)`;
+
+  const size=Math.min(42, Math.floor(320/COLS));
+  grid.forEach((l,i)=>{
+    const d=document.createElement("div");
+    d.className="cell";
+    d.style.width=size+"px";
+    d.style.height=size+"px";
+    d.textContent=l;
+    d.dataset.i=i;
+    d.onpointerdown=()=>startSel(d);
+    d.onpointerenter=()=>moveSel(d);
+    d.onpointerup=endSel;
+    g.appendChild(d);
+  });
+}
+
+function renderWords(){
+  const w=document.getElementById("words");
+  w.innerHTML="";
+  words.forEach(word=>{
+    const s=document.createElement("span");
+    s.id="w_"+word;
+    s.textContent=word;
+    w.appendChild(s);
+  });
+}
+
+/* ========= 選字 ========= */
+function startSel(c){
+  selecting=true; startCell=c; path=[c];
+  c.classList.add("active"); beep(500,.05);
+}
+function moveSel(c){
+  if(!selecting) return;
+  clearActive();
+  path=getLine(startCell,c);
+  path.forEach(x=>x.classList.add("active"));
+}
+function endSel(){
+  if(!selecting) return;
+  selecting=false;
+  const w=path.map(c=>c.textContent).join("");
+  if(words.includes(w)&&!found.has(w)){
+    found.add(w);
+    path.forEach(c=>c.classList.add("found"));
+    document.getElementById("w_"+w).style.textDecoration="line-through";
+    beep(900);
+  }
+  clearActive();
+  if(found.size===words.length) win();
+}
+
+/* ========= 工具 ========= */
+function getLine(a,b){
+  const ai=+a.dataset.i, bi=+b.dataset.i;
+  const ax=ai%COLS, ay=ai/COLS|0;
+  const bx=bi%COLS, by=bi/COLS|0;
+  const dx=Math.sign(bx-ax), dy=Math.sign(by-ay);
+  if(!(dx===0||dy===0||Math.abs(bx-ax)===Math.abs(by-ay))) return [a];
+  const cells=[];
+  for(let x=ax,y=ay;;x+=dx,y+=dy){
+    cells.push(document.querySelector(`.cell[data-i='${y*COLS+x}']`));
+    if(x===bx&&y===by) break;
+  }
+  return cells;
+}
+function clearActive(){
+  document.querySelectorAll(".cell").forEach(c=>c.classList.remove("active"));
+}
+function win(){
+  document.getElementById("win").style.display="block";
+  beep(1200,.4);
+}
+function nextLevel(){
+  if(level<MAX_LEVEL){level++;loadLevel();}
+  else alert("🎉 30 關全部完成！");
+}
+function backMenu(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("menu").style.display="block";
+}
+</script>
+
+</body>
+</html>
