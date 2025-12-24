@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Levels</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 1rem;
+  background: #fafafa;
+}
+
+button {
+  padding: .5rem 1rem;
+  margin: .3rem;
+  border-radius: 8px;
+  border: none;
+  background: #4caf50;
+  color: white;
+  font-size: 1rem;
+}
+
+#grid {
+  display: grid;
+  gap: 4px;
+  justify-content: center;
+  touch-action: none;
+  margin: 1rem auto;
+}
+
+.cell {
+  width: 32px;
+  height: 32px;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 6px;
+  user-select: none;
+}
+
+.cell.selected { background: #ffd966; }
+.cell.found { background: #8fd3a8; }
+
+#words li.found {
+  text-decoration: line-through;
+  color: gray;
+}
+
+#win {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#win.show {
+  display: flex;
+}
+
+#win div {
+  background: white;
+  padding: 2rem 3rem;
+  border-radius: 20px;
+  font-size: 1.5rem;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔍 Word Search</h1>
+
+<div id="menu">
+  <p>選擇關卡</p>
+  <button onclick="startLevel('junior')">國中會考</button>
+  <button onclick="startLevel('senior')">高中學測</button>
+  <button onclick="startLevel('custom')">自訂題目</button>
+</div>
+
+<div id="game" style="display:none;">
+  <div id="grid"></div>
+  <ul id="words"></ul>
+</div>
+
+<div id="win"><div>🎉 關卡完成！🎉</div></div>
+
+<script>
+/* 🔊 音效 */
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+function beep(freq,dur){
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.frequency.value=freq;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+dur);
+  o.stop(audioCtx.currentTime+dur);
+}
+
+/* 關卡資料 */
+const levels = {
+  junior: {
+    size: 8,
+    words: ["CAT","DOG","APPLE","BOOK","SCHOOL"]
+  },
+  senior: {
+    size: 12,
+    words: ["ANALYSIS","CULTURE","ECONOMY","SIGNIFICANT","CONTRAST"]
+  }
+};
+
+const directions=[[1,0],[0,1],[1,1],[1,-1],[-1,0],[0,-1],[-1,-1],[-1,1]];
+let grid=[], size=0, words=[], selected=[], dragging=false, dir=null, found=0;
+
+/* 開始關卡 */
+function startLevel(type){
+  if(type==="custom"){
+    const input=prompt("輸入單字（用逗號分隔）");
+    if(!input) return;
+    words=input.toUpperCase().split(",").map(w=>w.trim());
+    size=Math.max(8,Math.max(...words.map(w=>w.length))+2);
+  } else {
+    words=[...levels[type].words];
+    size=levels[type].size;
+  }
+
+  document.getElementById("menu").style.display="none";
+  document.getElementById("game").style.display="block";
+
+  grid=Array(size).fill().map(()=>Array(size).fill(""));
+  found=0;
+  placeWords(); fillGrid(); renderGrid(); renderWords();
+}
+
+/* 放單字 */
+function placeWords(){
+  words.forEach(word=>{
+    let ok=false;
+    while(!ok){
+      const d=directions[Math.floor(Math.random()*directions.length)];
+      const r=Math.floor(Math.random()*size);
+      const c=Math.floor(Math.random()*size);
+      if(canPlace(word,r,c,d)){
+        for(let i=0;i<word.length;i++)
+          grid[r+d[0]*i][c+d[1]*i]=word[i];
+        ok=true;
+      }
+    }
+  });
+}
+
+function canPlace(word,r,c,d){
+  for(let i=0;i<word.length;i++){
+    const nr=r+d[0]*i,nc=c+d[1]*i;
+    if(nr<0||nc<0||nr>=size||nc>=size) return false;
+    if(grid[nr][nc] && grid[nr][nc]!==word[i]) return false;
+  }
+  return true;
+}
+
+function fillGrid(){
+  for(let r=0;r<size;r++)
+    for(let c=0;c<size;c++)
+      if(!grid[r][c])
+        grid[r][c]=String.fromCharCode(65+Math.random()*26);
+}
+
+/* 畫面 */
+function renderGrid(){
+  const g=document.getElementById("grid");
+  g.style.gridTemplateColumns=`repeat(${size},1fr)`;
+  g.innerHTML="";
+  grid.forEach((row,r)=>row.forEach((l,c)=>{
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.textContent=l;
+    cell.dataset.r=r; cell.dataset.c=c;
+
+    cell.onpointerdown=()=>{
+      beep(600,.05);
+      selected=[]; dir=null; dragging=true;
+      cell.classList.add("selected"); selected.push(cell);
+    };
+    cell.onpointerenter=()=>{
+      if(!dragging) return;
+      const last=selected[selected.length-1];
+      const dr=Math.sign(cell.dataset.r-last.dataset.r);
+      const dc=Math.sign(cell.dataset.c-last.dataset.c);
+      if(!dir) dir=[dr,dc];
+      if(dr===dir[0] && dc===dir[1]){
+        cell.classList.add("selected");
+        selected.push(cell);
+      }
+    };
+    g.appendChild(cell);
+  });
+
+  document.onpointerup=()=>{
+    if(dragging) check();
+    dragging=false;
+  };
+}
+
+function renderWords(){
+  const ul=document.getElementById("words");
+  ul.innerHTML="";
+  words.forEach(w=>{
+    const li=document.createElement("li");
+    li.id="w"+w;
+    li.textContent=w;
+    ul.appendChild(li);
+  });
+}
+
+function check(){
+  const w=selected.map(c=>c.textContent).join("");
+  const r=w.split("").reverse().join("");
+  words.forEach(word=>{
+    if(w===word||r===word){
+      beep(900,.15);
+      selected.forEach(c=>c.classList.replace("selected","found"));
+      document.getElementById("w"+word).classList.add("found");
+      found++;
+      if(found===words.length){
+        beep(1200,.4);
+        document.getElementById("win").classList.add("show");
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
