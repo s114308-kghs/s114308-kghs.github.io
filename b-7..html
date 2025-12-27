@@ -2,25 +2,25 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>搗麻糬超大預覽版</title>
+<title>搗麻糬震撼爆炸版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f5f0e1; font-family:sans-serif; overflow:hidden; }
 h2 { text-align:center; margin-bottom:10px; }
 #scene { position:relative; width:100%; height:200px; display:flex; align-items:flex-end; justify-content:center; overflow:hidden;}
 #usu { position:absolute; width:220px; height:140px; background:#d6a76a; border-radius:50%/30%; bottom:0; z-index:1; }
-#mochi { width:80px; height:80px; background:pink; border-radius:50%; box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); position:absolute; bottom:50px; z-index:2; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; transition:width 0.05s,height 0.05s,border-radius 0.05s, transform 0.3s, opacity 0.3s; }
+#mochi { width:80px; height:80px; background:pink; border-radius:50%; box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); position:absolute; bottom:50px; z-index:10; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; transition:width 0.05s,height 0.05s,border-radius 0.05s, transform 0.3s, opacity 0.3s; }
 .eye { position:absolute; width:10px; height:10px; background:black; border-radius:50%; top:35%; left:25%; transition:all 0.05s; }
 .eye.right { left:55%; }
 .mouth { position:absolute; width:0; height:3px; border-radius:2px; background:black; bottom:25%; left:50%; transform:translateX(-50%); transition:width 0.05s; }
-.piece { position:absolute; width:20px; height:20px; background:pink; border-radius:50%; z-index:2; pointer-events:none; }
+.piece { position:absolute; width:20px; height:20px; background:pink; border-radius:50%; z-index:5; pointer-events:none; }
 input[type="color"] { margin:15px; width:60px; height:40px; border:none; border-radius:8px; }
 p { text-align:center; color:#555; font-size:14px; }
 </style>
 </head>
 <body>
 
-<h2>🍡 搗麻糬超大預覽版</h2>
+<h2>🍡 搗麻糬震撼爆炸版</h2>
 <input type="color" id="colorPicker">
 <div id="scene">
   <div id="usu"></div>
@@ -30,7 +30,7 @@ p { text-align:center; color:#555; font-size:14px; }
     <div class="mouth"></div>
   </div>
 </div>
-<p>👉 點住 / 按住麻糬拉長，放開回彈；拉得非常非常大才會爆炸！</p>
+<p>👉 點住 / 按住麻糬拉長，放開回彈；拉到極大才爆炸，爆炸聲震撼！</p>
 
 <script>
 const mochi = document.getElementById("mochi");
@@ -43,14 +43,15 @@ const scene = document.getElementById("scene");
 colorPicker.addEventListener("input", e => { mochi.style.background = e.target.value; });
 
 let size = 80;
-const MAX_SIZE = 600; // 超大尺寸才爆炸
+const MAX_SIZE = 600; 
 let stretchInterval = null;
 
-// AudioContext 軟綿綿聲音
+// AudioContext 軟綿綿聲音 + 爆炸聲
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let oscillator = null;
 let gainNode = null;
 
+// 軟綿綿聲音
 function startSoftAh(){
   if(!oscillator){
     oscillator = audioCtx.createOscillator();
@@ -81,10 +82,26 @@ function stopSoftAh(){
   }
 }
 
+// 震撼爆炸聲
+function playBoom(){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type="square";
+  osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime+0.3);
+  gain.gain.setValueAtTime(1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime+0.3);
+}
+
 // 麻糬爆炸
 function explodeMochi(){
+  playBoom();
   const pieces = [];
-  for(let i=0;i<10;i++){
+  for(let i=0;i<12;i++){
     const p = document.createElement("div");
     p.className="piece";
     p.style.background=mochi.style.background;
@@ -93,7 +110,7 @@ function explodeMochi(){
     scene.appendChild(p);
     pieces.push(p);
     const angle=Math.random()*2*Math.PI;
-    const distance=80+Math.random()*80;
+    const distance=80+Math.random()*120;
     p.animate([
       { transform:`translate(0,0)`, opacity:1 },
       { transform:`translate(${Math.cos(angle)*distance}px,${-Math.sin(angle)*distance}px)`, opacity:0 }
@@ -143,7 +160,7 @@ function startStretch(){
   startSoftAh();
 
   stretchInterval = setInterval(()=>{
-    size += 6; // 拉長速度稍快
+    size += 6; 
     if(size>=MAX_SIZE){
       explodeMochi();
       stopStretch();
