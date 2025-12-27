@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>豆豆眼軟糯麻糬拉長發聲</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fef5f5;
+    font-family: sans-serif;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  #mochi-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  #mochi {
+    width: 100%;
+    height: 100%;
+    background: pink;
+    border-radius: 50%;
+    box-shadow: inset -5px -5px 20px rgba(255,255,255,0.5),
+                inset 5px 5px 20px rgba(0,0,0,0.1);
+    transition: width 0.1s, height 0.1s, border-radius 0.1s;
+    touch-action: none;
+    user-select: none;
+    position: relative;
+  }
+
+  /* 豆豆眼 */
+  .eye {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: black;
+    border-radius: 50%;
+    top: 40%;
+    left: 30%;
+    transition: all 0.1s;
+  }
+
+  .eye.right {
+    left: 55%;
+  }
+
+  input[type="color"] {
+    margin: 15px;
+    width: 60px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+  }
+
+  p {
+    text-align: center;
+    color: #555;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h2>🍡 豆豆眼軟糯麻糬拉長發聲</h2>
+
+<input type="color" id="colorPicker">
+
+<div id="mochi-container">
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+  </div>
+</div>
+
+<p>👉 點住 / 按住麻糬拉長，放開回彈</p>
+
+<script>
+const mochi = document.getElementById("mochi");
+const colorPicker = document.getElementById("colorPicker");
+const eyeLeft = mochi.querySelector(".eye.left");
+const eyeRight = mochi.querySelector(".eye.right");
+
+// 染色
+colorPicker.addEventListener("input", e => {
+  mochi.style.background = e.target.value;
+});
+
+// 初始尺寸
+let width = 120;
+let height = 120;
+
+// Web Audio 可愛聲音
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator = null;
+let gainNode = null;
+
+function startCuteAh() {
+  if (!oscillator) {
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 220;
+    gainNode.gain.value = 0.2;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+  }
+}
+
+function updatePitch() {
+  if (oscillator) {
+    oscillator.frequency.value = 220 + (width - 120) * 0.5;
+  }
+}
+
+function stopCuteAh() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator.disconnect();
+    gainNode.disconnect();
+    oscillator = null;
+    gainNode = null;
+  }
+}
+
+// 彈性回彈
+function rebound() {
+  const interval = setInterval(() => {
+    width = width - (width - 120) * 0.1;
+    height = height - (height - 120) * 0.1;
+    mochi.style.width = width + "px";
+    mochi.style.height = height + "px";
+    mochi.style.borderRadius = 50 + (width-120)*0.1 + "%";
+
+    // 豆豆眼位置微調
+    eyeLeft.style.top = 40 + (width-120)*0.05 + "%";
+    eyeRight.style.top = 40 + (width-120)*0.05 + "%";
+
+    if (Math.abs(width - 120) < 0.5) {
+      mochi.style.width = "120px";
+      mochi.style.height = "120px";
+      mochi.style.borderRadius = "50%";
+      eyeLeft.style.top = "40%";
+      eyeRight.style.top = "40%";
+      clearInterval(interval);
+    }
+  }, 30);
+}
+
+// 拉長功能
+let stretchInterval = null;
+
+function startStretch() {
+  audioCtx.resume();
+  startCuteAh();
+
+  stretchInterval = setInterval(() => {
+    width += 8;
+    height += 4;
+    mochi.style.width = width + "px";
+    mochi.style.height = height + "px";
+    mochi.style.borderRadius = 50 + (width-120)*0.1 + "%";
+
+    // 豆豆眼跟著拉長微微移動
+    eyeLeft.style.top = 40 + (width-120)*0.05 + "%";
+    eyeRight.style.top = 40 + (width-120)*0.05 + "%";
+
+    updatePitch();
+  }, 50);
+}
+
+function stopStretch() {
+  clearInterval(stretchInterval);
+  stopCuteAh();
+  rebound();
+}
+
+// 電腦滑鼠
+mochi.addEventListener("mousedown", e => {
+  e.preventDefault();
+  startStretch();
+});
+document.addEventListener("mouseup", e => {
+  stopStretch();
+});
+
+// 手機觸控
+mochi.addEventListener("touchstart", e => {
+  e.preventDefault();
+  startStretch();
+});
+mochi.addEventListener("touchend", e => {
+  e.preventDefault();
+  stopStretch();
+});
+mochi.addEventListener("touchcancel", e => {
+  e.preventDefault();
+  stopStretch();
+});
+</script>
+
+</body>
+</html>
