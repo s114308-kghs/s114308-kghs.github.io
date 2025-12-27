@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>黏呼呼麻糬拉長發聲</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f7f7f7;
+    font-family: sans-serif;
+  }
+
+  h2 {
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  #mochi {
+    width: 120px;
+    height: 120px;
+    background: pink;
+    border-radius: 50%;
+    transition: width 0.1s, height 0.1s; /* 彈性回彈 */
+    touch-action: none;
+  }
+
+  input[type="color"] {
+    margin: 15px;
+    width: 60px;
+    height: 40px;
+    border: none;
+  }
+
+  p {
+    color: #555;
+    font-size: 14px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h2>🍡 黏呼呼麻糬拉長發出「啊～」</h2>
+
+<input type="color" id="colorPicker">
+
+<div id="mochi"></div>
+
+<p>👉 點住麻糬拉長，放開回彈</p>
+
+<script>
+const mochi = document.getElementById("mochi");
+const colorPicker = document.getElementById("colorPicker");
+
+// 染色
+colorPicker.addEventListener("input", e => {
+  mochi.style.background = e.target.value;
+});
+
+// 初始尺寸
+let width = 120;
+let height = 120;
+
+// 音效
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator = null;
+
+function startAhSound() {
+  oscillator = audioCtx.createOscillator();
+  oscillator.type = "sawtooth";
+  oscillator.frequency.value = 220;
+  oscillator.connect(audioCtx.destination);
+  oscillator.start();
+}
+
+function stopAhSound() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator.disconnect();
+    oscillator = null;
+  }
+}
+
+// 彈性回彈
+function rebound() {
+  const step = 0.9; // 回彈速度
+  const interval = setInterval(() => {
+    width = width - (width - 120) * step * 0.1;
+    height = height - (height - 120) * step * 0.1;
+    mochi.style.width = width + "px";
+    mochi.style.height = height + "px";
+
+    if (Math.abs(width - 120) < 0.5) {
+      mochi.style.width = "120px";
+      mochi.style.height = "120px";
+      clearInterval(interval);
+    }
+  }, 30);
+}
+
+// 觸控拉長
+let stretchInterval = null;
+
+mochi.addEventListener("touchstart", e => {
+  e.preventDefault();
+  audioCtx.resume();
+  startAhSound();
+
+  stretchInterval = setInterval(() => {
+    width += 8;   // 拉長速度
+    height += 4;  // 拉高微微增加厚度
+    mochi.style.width = width + "px";
+    mochi.style.height = height + "px";
+  }, 50);
+});
+
+mochi.addEventListener("touchend", e => {
+  e.preventDefault();
+  clearInterval(stretchInterval);
+  stopAhSound();
+  rebound();
+});
+
+mochi.addEventListener("touchcancel", e => {
+  e.preventDefault();
+  clearInterval(stretchInterval);
+  stopAhSound();
+  rebound();
+});
+</script>
+
+</body>
+</html>
