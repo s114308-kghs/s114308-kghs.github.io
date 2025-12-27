@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>拉長發出啊聲音</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f7f7f7;
+    font-family: sans-serif;
+  }
+
+  h2 {
+    margin-bottom: 10px;
+  }
+
+  #mochi {
+    width: 120px;
+    height: 120px;
+    background: pink;
+    border-radius: 50%;
+    transition: width 0.1s;
+  }
+
+  input[type="color"] {
+    margin: 15px;
+    width: 60px;
+    height: 40px;
+    border: none;
+  }
+
+  p {
+    color: #555;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h2>🍡 拉長發出「啊～」</h2>
+
+<!-- 第一步：自行染色 -->
+<input type="color" id="colorPicker">
+
+<!-- 物件 -->
+<div id="mochi"></div>
+
+<p>👉 長按「空白鍵」拉長</p>
+
+<script>
+  const mochi = document.getElementById("mochi");
+  const colorPicker = document.getElementById("colorPicker");
+
+  // 第一步：染色
+  colorPicker.addEventListener("input", e => {
+    mochi.style.background = e.target.value;
+  });
+
+  let isPressing = false;
+  let width = 120;
+
+  // 聲音（Web Audio）
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  let oscillator = null;
+
+  function startAhSound() {
+    oscillator = audioCtx.createOscillator();
+    oscillator.type = "sawtooth"; // 比較像「啊」
+    oscillator.frequency.value = 220;
+    oscillator.connect(audioCtx.destination);
+    oscillator.start();
+  }
+
+  function stopAhSound() {
+    if (oscillator) {
+      oscillator.stop();
+      oscillator.disconnect();
+      oscillator = null;
+    }
+  }
+
+  // 第二、三步：長按空白
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !isPressing) {
+      isPressing = true;
+      audioCtx.resume();
+      startAhSound();
+
+      stretchInterval = setInterval(() => {
+        width += 6;
+        mochi.style.width = width + "px";
+      }, 60);
+    }
+  });
+
+  document.addEventListener("keyup", e => {
+    if (e.code === "Space") {
+      isPressing = false;
+      clearInterval(stretchInterval);
+      stopAhSound();
+    }
+  });
+</script>
+
+</body>
+</html>
