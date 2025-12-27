@@ -2,122 +2,25 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>搗麻糬場景</title>
+<title>搗麻糬修正版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body {
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #f5f0e1;
-    font-family: sans-serif;
-    overflow: hidden;
-  }
-
-  h2 {
-    text-align: center;
-    margin-bottom: 10px;
-  }
-
-  #scene {
-    position: relative;
-    width: 300px;
-    height: 200px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-  }
-
-  /* 臼 */
-  #usu {
-    position: absolute;
-    width: 220px;
-    height: 140px;
-    background: #d6a76a;
-    border-radius: 50% / 30%;
-    bottom: 0;
-    z-index: 1;
-  }
-
-  /* 杵 */
-  #kine {
-    position: absolute;
-    width: 20px;
-    height: 120px;
-    background: #a4723d;
-    border-radius: 10px;
-    bottom: 40px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 3;
-  }
-
-  /* 麻糬 */
-  #mochi {
-    width: 80px;
-    height: 80px;
-    background: pink;
-    border-radius: 50%;
-    box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5),
-                inset 5px 5px 15px rgba(0,0,0,0.1);
-    position: absolute;
-    bottom: 50px;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: none;
-    user-select: none;
-  }
-
-  .eye {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    background: black;
-    border-radius: 50%;
-    top: 35%;
-    left: 25%;
-    transition: all 0.05s;
-  }
-
-  .eye.right {
-    left: 55%;
-  }
-
-  .mouth {
-    position: absolute;
-    width: 0;
-    height: 3px;
-    border-radius: 2px;
-    background: black;
-    bottom: 25%;
-    left: 50%;
-    transform: translateX(-50%);
-    transition: width 0.05s;
-  }
-
-  input[type="color"] {
-    margin: 15px;
-    width: 60px;
-    height: 40px;
-    border: none;
-    border-radius: 8px;
-  }
-
-  p {
-    text-align: center;
-    color: #555;
-    font-size: 14px;
-  }
+  body { margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f0e1; font-family: sans-serif; overflow: hidden; }
+  h2 { text-align: center; margin-bottom: 10px; }
+  #scene { position: relative; width: 300px; height: 200px; display: flex; align-items: flex-end; justify-content: center; }
+  #usu { position: absolute; width: 220px; height: 140px; background: #d6a76a; border-radius: 50% / 30%; bottom: 0; z-index: 1; }
+  #kine { position: absolute; width: 20px; height: 120px; background: #a4723d; border-radius: 10px; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 3; }
+  #mochi { width: 80px; height: 80px; background: pink; border-radius: 50%; box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); position: absolute; bottom: 50px; z-index: 2; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; }
+  .eye { position: absolute; width: 10px; height: 10px; background: black; border-radius: 50%; top: 35%; left: 25%; transition: all 0.05s; }
+  .eye.right { left: 55%; }
+  .mouth { position: absolute; width: 0; height: 3px; border-radius: 2px; background: black; bottom: 25%; left: 50%; transform: translateX(-50%); transition: width 0.05s; }
+  input[type="color"] { margin: 15px; width: 60px; height: 40px; border: none; border-radius: 8px; }
+  p { text-align: center; color: #555; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<h2>🍡 搗麻糬場景</h2>
+<h2>🍡 搗麻糬修正版</h2>
 
 <input type="color" id="colorPicker">
 
@@ -184,7 +87,7 @@ function stopSoftAh() {
   }
 }
 
-// 彈性回彈 + 豆豆眼 + 嘴巴
+// 彈性回彈 + 豆豆眼 + 嘴巴 + 杵
 function rebound() {
   const interval = setInterval(() => {
     size = size - (size - 80) * 0.1;
@@ -192,7 +95,6 @@ function rebound() {
     mochi.style.height = size + "px";
     mochi.style.borderRadius = 50 + (size-80)*0.1 + "%";
 
-    // 豆豆眼微晃
     const eyeOffsetX = Math.sin(Date.now()/100)*2; 
     const eyeOffsetY = Math.sin(Date.now()/120)*2;
     eyeLeft.style.top = 35 + eyeOffsetY + "%";
@@ -200,10 +102,7 @@ function rebound() {
     eyeRight.style.top = 35 + eyeOffsetY + "%";
     eyeRight.style.left = 55 + eyeOffsetX + "%";
 
-    // 嘴巴微笑
     mouth.style.width = Math.min((size - 80)*0.4, 20) + "px";
-
-    // 杵上下微動
     kine.style.bottom = 40 + (size - 80)*0.1 + "px";
 
     if (Math.abs(size - 80) < 0.5) {
@@ -225,10 +124,46 @@ function rebound() {
 let stretchInterval = null;
 
 function startStretch() {
+  // 確保 AudioContext 可播放
   audioCtx.resume();
   startSoftAh();
 
   stretchInterval = setInterval(() => {
     size += 4; // 上下左右平均拉長
     mochi.style.width = size + "px";
-    mochi.style.height = si
+    mochi.style.height = size + "px";
+    mochi.style.borderRadius = 50 + (size-80)*0.1 + "%";
+
+    const eyeOffsetX = Math.sin(Date.now()/50)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/60)*2;
+    eyeLeft.style.top = 35 + eyeOffsetY + "%";
+    eyeLeft.style.left = 25 + eyeOffsetX + "%";
+    eyeRight.style.top = 35 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    mouth.style.width = Math.min((size - 80)*0.4, 20) + "px";
+    kine.style.bottom = 40 + (size - 80)*0.1 + "px";
+
+    updatePitch();
+  }, 50);
+}
+
+function stopStretch() {
+  clearInterval(stretchInterval);
+  stopSoftAh();
+  rebound();
+}
+
+// 電腦滑鼠
+mochi.addEventListener("mousedown", e => { e.preventDefault(); startStretch(); });
+document.addEventListener("mouseup", e => stopStretch());
+document.addEventListener("mouseleave", e => stopStretch());
+
+// 手機觸控
+mochi.addEventListener("touchstart", e => { e.preventDefault(); startStretch(); });
+mochi.addEventListener("touchend", e => stopStretch());
+mochi.addEventListener("touchcancel", e => stopStretch());
+</script>
+
+</body>
+</html>
