@@ -2,11 +2,10 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>麻糬最上層震撼爆炸</title>
+<title>麻糬永遠最上層</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body { margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f5f0e1; font-family:sans-serif; overflow:hidden; }
-h2 { text-align:center; margin-bottom:10px; }
 #scene { position:relative; width:100%; height:200px; display:flex; align-items:flex-end; justify-content:center; overflow:hidden;}
 #usu { position:absolute; width:220px; height:140px; background:#d6a76a; border-radius:50%/30%; bottom:0; z-index:1; }
 #mochi { width:80px; height:80px; background:pink; border-radius:50%; box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); position:absolute; bottom:50px; z-index:1000; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; transition:width 0.05s,height 0.05s,border-radius 0.05s, transform 0.3s, opacity 0.3s; }
@@ -14,13 +13,12 @@ h2 { text-align:center; margin-bottom:10px; }
 .eye.right { left:55%; }
 .mouth { position:absolute; width:0; height:3px; border-radius:2px; background:black; bottom:25%; left:50%; transform:translateX(-50%); transition:width 0.05s; }
 .piece { position:absolute; width:20px; height:20px; background:pink; border-radius:50%; z-index:500; pointer-events:none; }
-input[type="color"] { margin:15px; width:60px; height:40px; border:none; border-radius:8px; }
+#colorPicker { position:fixed; top:10px; left:10px; z-index:2000; width:60px; height:40px; border:none; border-radius:8px; }
 p { text-align:center; color:#555; font-size:14px; }
 </style>
 </head>
 <body>
 
-<h2>🍡 麻糬最上層震撼爆炸</h2>
 <input type="color" id="colorPicker">
 <div id="scene">
   <div id="usu"></div>
@@ -30,7 +28,7 @@ p { text-align:center; color:#555; font-size:14px; }
     <div class="mouth"></div>
   </div>
 </div>
-<p>👉 拉麻糬到非常大才爆炸，麻糬永遠在最上面！</p>
+<p>拉麻糬到非常大才爆炸，麻糬永遠在最上層，調色器不會擋住它！</p>
 
 <script>
 const mochi = document.getElementById("mochi");
@@ -46,11 +44,9 @@ let size = 80;
 const MAX_SIZE = 600; 
 let stretchInterval = null;
 
-// AudioContext 軟綿綿聲音 + 爆炸聲
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let oscillator = null;
 
-// 軟綿綿聲音
 function startSoftAh(){
   if(!oscillator){
     oscillator = audioCtx.createOscillator();
@@ -81,7 +77,6 @@ function stopSoftAh(){
   }
 }
 
-// 震撼爆炸聲
 function playBoom(){
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -96,7 +91,6 @@ function playBoom(){
   osc.stop(audioCtx.currentTime+0.3);
 }
 
-// 麻糬爆炸
 function explodeMochi(){
   playBoom();
   const pieces = [];
@@ -107,7 +101,6 @@ function explodeMochi(){
     p.style.left=(scene.offsetWidth/2-10)+"px";
     p.style.bottom=(50)+"px";
     scene.appendChild(p);
-    pieces.push(p);
     const angle=Math.random()*2*Math.PI;
     const distance=80+Math.random()*120;
     p.animate([
@@ -116,14 +109,12 @@ function explodeMochi(){
     ],{duration:600, easing:"ease-out"});
     setTimeout(()=>p.remove(),600);
   }
-  // 麻糬永遠保持在最上層
   mochi.style.width="80px";
   mochi.style.height="80px";
   mochi.style.borderRadius="50%";
   size=80;
 }
 
-// 彈性回彈
 function rebound(){
   const interval = setInterval(()=>{
     size = size - (size-80)*0.1;
@@ -154,7 +145,6 @@ function rebound(){
   },30);
 }
 
-// 拉長功能
 function startStretch(){
   audioCtx.resume();
   startSoftAh();
@@ -189,11 +179,9 @@ function stopStretch(){
   rebound();
 }
 
-// 事件
 mochi.addEventListener("mousedown",e=>{e.preventDefault(); startStretch();});
 document.addEventListener("mouseup",stopStretch);
 document.addEventListener("mouseleave",stopStretch);
-
 mochi.addEventListener("touchstart",e=>{e.preventDefault(); startStretch();});
 mochi.addEventListener("touchend",stopStretch);
 mochi.addEventListener("touchcancel",stopStretch);
