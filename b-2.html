@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>黏呼呼麻糬拉長發聲</title>
+<title>超可愛豆豆眼麻糬</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   body {
@@ -12,22 +12,47 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #f7f7f7;
+    background: #fef5f5;
     font-family: sans-serif;
   }
 
   h2 {
-    margin-bottom: 10px;
     text-align: center;
+    margin-bottom: 10px;
+  }
+
+  #mochi-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
   }
 
   #mochi {
-    width: 120px;
-    height: 120px;
+    width: 100%;
+    height: 100%;
     background: pink;
     border-radius: 50%;
-    transition: width 0.1s, height 0.1s; /* 彈性回彈 */
+    box-shadow: inset -5px -5px 20px rgba(255,255,255,0.5),
+                inset 5px 5px 20px rgba(0,0,0,0.1);
+    transition: width 0.1s, height 0.1s, border-radius 0.1s;
     touch-action: none;
+    user-select: none;
+    position: relative;
+  }
+
+  .eye {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: black;
+    border-radius: 50%;
+    top: 40%;
+    left: 30%;
+    transition: all 0.05s;
+  }
+
+  .eye.right {
+    left: 55%;
   }
 
   input[type="color"] {
@@ -35,28 +60,36 @@
     width: 60px;
     height: 40px;
     border: none;
+    border-radius: 8px;
   }
 
   p {
+    text-align: center;
     color: #555;
     font-size: 14px;
-    text-align: center;
   }
 </style>
 </head>
 <body>
 
-<h2>🍡 黏呼呼麻糬拉長發出「啊～」</h2>
+<h2>🍡 超可愛豆豆眼麻糬拉長發聲</h2>
 
 <input type="color" id="colorPicker">
 
-<div id="mochi"></div>
+<div id="mochi-container">
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+  </div>
+</div>
 
-<p>👉 點住麻糬拉長，放開回彈</p>
+<p>👉 點住 / 按住麻糬拉長，放開回彈</p>
 
 <script>
 const mochi = document.getElementById("mochi");
 const colorPicker = document.getElementById("colorPicker");
+const eyeLeft = mochi.querySelector(".eye.left");
+const eyeRight = mochi.querySelector(".eye.right");
 
 // 染色
 colorPicker.addEventListener("input", e => {
@@ -67,71 +100,123 @@ colorPicker.addEventListener("input", e => {
 let width = 120;
 let height = 120;
 
-// 音效
+// Web Audio 可愛聲音
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let oscillator = null;
+let gainNode = null;
 
-function startAhSound() {
-  oscillator = audioCtx.createOscillator();
-  oscillator.type = "sawtooth";
-  oscillator.frequency.value = 220;
-  oscillator.connect(audioCtx.destination);
-  oscillator.start();
-}
-
-function stopAhSound() {
-  if (oscillator) {
-    oscillator.stop();
-    oscillator.disconnect();
-    oscillator = null;
+function startCuteAh() {
+  if (!oscillator) {
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    oscillator.type = "triangle"; // 更柔和可愛
+    oscillator.frequency.value = 220;
+    gainNode.gain.value = 0.15;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
   }
 }
 
-// 彈性回彈
+function updatePitch() {
+  if (oscillator) {
+    oscillator.frequency.value = 220 + (width - 120) * 0.5;
+  }
+}
+
+function stopCuteAh() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator.disconnect();
+    gainNode.disconnect();
+    oscillator = null;
+    gainNode = null;
+  }
+}
+
+// 彈性回彈 + 豆豆眼微晃
 function rebound() {
-  const step = 0.9; // 回彈速度
   const interval = setInterval(() => {
-    width = width - (width - 120) * step * 0.1;
-    height = height - (height - 120) * step * 0.1;
+    width = width - (width - 120) * 0.1;
+    height = height - (height - 120) * 0.1;
     mochi.style.width = width + "px";
     mochi.style.height = height + "px";
+    mochi.style.borderRadius = 50 + (width-120)*0.1 + "%";
+
+    // 豆豆眼晃動
+    const eyeOffsetX = Math.sin(Date.now()/100)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/120)*2;
+    eyeLeft.style.top = 40 + (width-120)*0.05 + eyeOffsetY + "%";
+    eyeLeft.style.left = 30 + eyeOffsetX + "%";
+    eyeRight.style.top = 40 + (width-120)*0.05 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
 
     if (Math.abs(width - 120) < 0.5) {
       mochi.style.width = "120px";
       mochi.style.height = "120px";
+      mochi.style.borderRadius = "50%";
+      eyeLeft.style.top = "40%";
+      eyeLeft.style.left = "30%";
+      eyeRight.style.top = "40%";
+      eyeRight.style.left = "55%";
       clearInterval(interval);
     }
   }, 30);
 }
 
-// 觸控拉長
+// 拉長功能
 let stretchInterval = null;
 
-mochi.addEventListener("touchstart", e => {
-  e.preventDefault();
+function startStretch() {
   audioCtx.resume();
-  startAhSound();
+  startCuteAh();
 
   stretchInterval = setInterval(() => {
-    width += 8;   // 拉長速度
-    height += 4;  // 拉高微微增加厚度
+    width += 8;
+    height += 4;
     mochi.style.width = width + "px";
     mochi.style.height = height + "px";
+    mochi.style.borderRadius = 50 + (width-120)*0.1 + "%";
+
+    // 豆豆眼微晃
+    const eyeOffsetX = Math.sin(Date.now()/50)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/60)*2;
+    eyeLeft.style.top = 40 + (width-120)*0.05 + eyeOffsetY + "%";
+    eyeLeft.style.left = 30 + eyeOffsetX + "%";
+    eyeRight.style.top = 40 + (width-120)*0.05 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    updatePitch();
   }, 50);
+}
+
+function stopStretch() {
+  clearInterval(stretchInterval);
+  stopCuteAh();
+  rebound();
+}
+
+// 電腦滑鼠
+mochi.addEventListener("mousedown", e => {
+  e.preventDefault();
+  startStretch();
+});
+document.addEventListener("mouseup", e => {
+  stopStretch();
 });
 
+// 手機觸控
+mochi.addEventListener("touchstart", e => {
+  e.preventDefault();
+  startStretch();
+});
 mochi.addEventListener("touchend", e => {
   e.preventDefault();
-  clearInterval(stretchInterval);
-  stopAhSound();
-  rebound();
+  stopStretch();
 });
-
 mochi.addEventListener("touchcancel", e => {
   e.preventDefault();
-  clearInterval(stretchInterval);
-  stopAhSound();
-  rebound();
+  stopStretch();
 });
 </script>
 
