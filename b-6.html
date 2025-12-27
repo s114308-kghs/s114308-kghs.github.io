@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>搗麻糬爆炸版</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { margin:0; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f5f0e1; font-family:sans-serif; overflow:hidden; }
+  h2 { text-align:center; margin-bottom:10px; }
+  #scene { position:relative; width:300px; height:200px; display:flex; align-items:flex-end; justify-content:center; }
+  #usu { position:absolute; width:220px; height:140px; background:#d6a76a; border-radius:50%/30%; bottom:0; z-index:1; }
+  #kine { position:absolute; width:20px; height:120px; background:#a4723d; border-radius:10px; bottom:40px; left:50%; transform:translateX(-50%); z-index:3; transition:bottom 0.05s; }
+  #mochi { width:80px; height:80px; background:pink; border-radius:50%; box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); position:absolute; bottom:50px; z-index:2; display:flex; align-items:center; justify-content:center; touch-action:none; user-select:none; transition:width 0.05s,height 0.05s,border-radius 0.05s, transform 0.3s, opacity 0.3s; }
+  .eye { position:absolute; width:10px; height:10px; background:black; border-radius:50%; top:35%; left:25%; transition:all 0.05s; }
+  .eye.right { left:55%; }
+  .mouth { position:absolute; width:0; height:3px; border-radius:2px; background:black; bottom:25%; left:50%; transform:translateX(-50%); transition:width 0.05s; }
+  .piece { position:absolute; width:20px; height:20px; background:pink; border-radius:50%; z-index:2; pointer-events:none; }
+  input[type="color"] { margin:15px; width:60px; height:40px; border:none; border-radius:8px; }
+  p { text-align:center; color:#555; font-size:14px; }
+</style>
+</head>
+<body>
+
+<h2>🍡 搗麻糬爆炸版</h2>
+<input type="color" id="colorPicker">
+<div id="scene">
+  <div id="usu"></div>
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="mouth"></div>
+  </div>
+  <div id="kine"></div>
+</div>
+<p>👉 點住 / 按住麻糬拉長，放開回彈；拉太長會爆炸哦！</p>
+
+<script>
+const mochi = document.getElementById("mochi");
+const colorPicker = document.getElementById("colorPicker");
+const eyeLeft = mochi.querySelector(".eye.left");
+const eyeRight = mochi.querySelector(".eye.right");
+const mouth = mochi.querySelector(".mouth");
+const kine = document.getElementById("kine");
+const scene = document.getElementById("scene");
+
+colorPicker.addEventListener("input", e => {
+  mochi.style.background = e.target.value;
+});
+
+let size = 80;
+const MAX_SIZE = 180; // 最大尺寸
+let stretchInterval = null;
+
+// AudioContext
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator = null;
+let gainNode = null;
+
+function startSoftAh(){
+  if(!oscillator){
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    oscillator.type="sine";
+    oscillator.frequency.value=180;
+    gainNode.gain.value=0.12;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+  }
+}
+
+function updatePitch(){
+  if(oscillator){
+    oscillator.frequency.value = 180 + (size-80)*0.4;
+    gainNode.gain.value = 0.12 + Math.sin(Date.now()/100)*0.02;
+  }
+}
+
+function stopSoftAh(){
+  if(oscillator){
+    oscillator.stop();
+    oscillator.disconnect();
+    gainNode.disconnect();
+    oscillator=null;
+    gainNode=null;
+  }
+}
+
+// 麻糬爆炸
+function explodeMochi(){
+  const pieces = [];
+  for(let i=0;i<8;i++){
+    const p = document.createElement("div");
+    p.className="piece";
+    p.style.background=mochi.style.background;
+    p.style.left=(scene.offsetWidth/2-10)+"px";
+    p.style.bottom=(50+scene.offsetHeight*0)+"px";
+    scene.appendChild(p);
+    pieces.push(p);
+    // 隨機飛散
+    const angle=Math.random()*2*Math.PI;
+    const distance=50+Math.random()*50;
+    p.animate([
+      { transform:`translate(0,0)`, opacity:1 },
+      { transform:`translate(${Math.cos(angle)*distance}px,${-Math.sin(angle)*distance}px)`, opacity:0 }
+    ],{duration:500, easing:"ease-out"});
+    setTimeout(()=>p.remove(),500);
+  }
+  mochi.style.width="80px";
+  mochi.style.height="80px";
+  mochi.style.borderRadius="50%";
+  size=80;
+}
+
+// 彈性回彈
+function rebound(){
+  const interval = setInterval(()=>{
+    size = size - (size-80)*0.1;
+    mochi.style.width=size+"px";
+    mochi.style.height=size+"px";
+    mochi.style.borderRadius=50+(size-80)*0.1+"%";
+
+    const eyeOffsetX = Math.sin(Date.now()/100)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/120)*2;
+    eyeLeft.style.top = 35 + eyeOffsetY + "%";
+    eyeLeft.style.left = 25 + eyeOffsetX + "%";
+    eyeRight.style.top = 35 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    mouth.style.width=Math.min((size-80)*0.4,20)+"px";
+    kine.style.bottom = 40 + (size-80)*0.1 + "px";
+
+    if(Math.abs(size-80)<0.5){
+      mochi.style.width="80px";
+      mochi.style.height="80px";
+      mochi.style.borderRadius="50%";
+      eyeLeft.style.top="35%";
+      eyeLeft.style.left="25%";
+      eyeRight.style.top="35%";
+      eyeRight.style.left="55%";
+      mouth.style.width="0px";
+      kine.style.bottom="40px";
+      clearInterval(interval);
+    }
+  },30);
+}
+
+// 拉長功能
+function startStretch(){
+  audioCtx.resume();
+  startSoftAh();
+
+  stretchInterval = setInterval(()=>{
+    size += 4;
+    if(size>=MAX_SIZE){
+      explodeMochi();
+      stopStretch();
+      return;
+    }
+    mochi.style.width=size+"px";
+    mochi.style.height=size+"px";
+    mochi.style.borderRadius=50+(size-80)*0.1+"%";
+
+    const eyeOffsetX = Math.sin(Date.now()/50)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/60)*2;
+    eyeLeft.style.top = 35 + eyeOffsetY + "%";
+    eyeLeft.style.left = 25 + eyeOffsetX + "%";
+    eyeRight.style.top = 35 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    mouth.style.width=Math.min((size-80)*0.4,20)+"px";
+    kine.style.bottom = 40 + (size-80)*0.1 + "px";
+
+    updatePitch();
+  },50);
+}
+
+function stopStretch(){
+  clearInterval(stretchInterval);
+  stopSoftAh();
+  rebound();
+}
+
+// 事件
+mochi.addEventListener("mousedown",e=>{e.preventDefault(); startStretch();});
+document.addEventListener("mouseup",stopStretch);
+document.addEventListener("mouseleave",stopStretch);
+
+mochi.addEventListener("touchstart",e=>{e.preventDefault(); startStretch();});
+mochi.addEventListener("touchend",stopStretch);
+mochi.addEventListener("touchcancel",stopStretch);
+</script>
+
+</body>
+</html>
