@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>造型拼圖遊戲</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  text-align: center;
+}
+
+h1 {
+  margin: 15px 0;
+}
+
+.game {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* 拼圖區 */
+.board {
+  width: 300px;
+  height: 300px;
+  background: #fff;
+  border: 3px dashed #aaa;
+  position: relative;
+}
+
+/* 目標位置 */
+.slot {
+  position: absolute;
+  border: 2px dashed #ccc;
+}
+
+.slot.triangle {
+  width: 0;
+  height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+  border-bottom: 100px solid rgba(0,0,0,0.1);
+}
+
+.slot.square {
+  width: 100px;
+  height: 100px;
+  background: rgba(0,0,0,0.1);
+}
+
+/* 拼圖零件 */
+.pieces {
+  width: 300px;
+  min-height: 300px;
+}
+
+.piece {
+  margin: 10px;
+  cursor: grab;
+}
+
+/* 形狀 */
+.triangle {
+  width: 0;
+  height: 0;
+  border-left: 50px solid transparent;
+  border-right: 50px solid transparent;
+  border-bottom: 100px solid #ff7675;
+}
+
+.square {
+  width: 100px;
+  height: 100px;
+  background: #74b9ff;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🧩 造型拼圖</h1>
+
+<div class="game">
+  <!-- 拼圖零件 -->
+  <div class="pieces">
+    <div class="piece triangle" draggable="true" data-shape="triangle"></div>
+    <div class="piece square" draggable="true" data-shape="square"></div>
+  </div>
+
+  <!-- 拼圖板 -->
+  <div class="board">
+    <div class="slot triangle" data-accept="triangle" style="top:30px;left:30px;"></div>
+    <div class="slot square" data-accept="square" style="top:150px;left:150px;"></div>
+  </div>
+</div>
+
+<script>
+let dragged = null;
+
+document.querySelectorAll(".piece").forEach(p => {
+  p.addEventListener("dragstart", e => {
+    dragged = p;
+  });
+});
+
+document.querySelectorAll(".slot").forEach(slot => {
+  slot.addEventListener("dragover", e => e.preventDefault());
+
+  slot.addEventListener("drop", () => {
+    if (dragged.dataset.shape === slot.dataset.accept) {
+      dragged.style.position = "absolute";
+      dragged.style.top = slot.style.top;
+      dragged.style.left = slot.style.left;
+      dragged.style.margin = "0";
+      document.querySelector(".board").appendChild(dragged);
+      checkWin();
+    }
+  });
+});
+
+function checkWin() {
+  const allPlaced = document.querySelectorAll(".board .piece").length === 2;
+  if (allPlaced) {
+    setTimeout(() => alert("🎉 拼圖完成！"), 200);
+  }
+}
+</script>
+
+</body>
+</html>
