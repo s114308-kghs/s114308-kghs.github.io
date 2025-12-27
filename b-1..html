@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>橫縱平均拉長麻糬</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fef5f5;
+    font-family: sans-serif;
+    overflow: hidden;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  #mochi-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #mochi {
+    width: 120px;
+    height: 120px;
+    background: pink;
+    border-radius: 50%;
+    box-shadow: inset -5px -5px 20px rgba(255,255,255,0.5),
+                inset 5px 5px 20px rgba(0,0,0,0.1);
+    transition: width 0.05s, height 0.05s, border-radius 0.05s;
+    touch-action: none;
+    user-select: none;
+    position: relative;
+  }
+
+  .eye {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: black;
+    border-radius: 50%;
+    top: 40%;
+    left: 30%;
+    transition: all 0.05s;
+  }
+
+  .eye.right {
+    left: 55%;
+  }
+
+  .mouth {
+    position: absolute;
+    width: 0;
+    height: 4px;
+    border-radius: 2px;
+    background: black;
+    bottom: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: width 0.05s;
+  }
+
+  input[type="color"] {
+    margin: 15px;
+    width: 60px;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+  }
+
+  p {
+    text-align: center;
+    color: #555;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h2>🍡 平均橫縱拉長麻糬</h2>
+
+<input type="color" id="colorPicker">
+
+<div id="mochi-container">
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="mouth"></div>
+  </div>
+</div>
+
+<p>👉 點住 / 按住麻糬拉長，放開回彈</p>
+
+<script>
+const mochi = document.getElementById("mochi");
+const colorPicker = document.getElementById("colorPicker");
+const eyeLeft = mochi.querySelector(".eye.left");
+const eyeRight = mochi.querySelector(".eye.right");
+const mouth = mochi.querySelector(".mouth");
+
+// 染色
+colorPicker.addEventListener("input", e => {
+  mochi.style.background = e.target.value;
+});
+
+// 初始尺寸
+let size = 120; // 用一個變數控制橫縱平均
+let targetSize = 120;
+
+// Web Audio 軟綿綿聲音
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator = null;
+let gainNode = null;
+
+function startSoftAh() {
+  if (!oscillator) {
+    oscillator = audioCtx.createOscillator();
+    gainNode = audioCtx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 180;
+    gainNode.gain.value = 0.12;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+  }
+}
+
+function updatePitch() {
+  if (oscillator) {
+    oscillator.frequency.value = 180 + (size - 120) * 0.3;
+    gainNode.gain.value = 0.12 + Math.sin(Date.now()/100)*0.02;
+  }
+}
+
+function stopSoftAh() {
+  if (oscillator) {
+    oscillator.stop();
+    oscillator.disconnect();
+    gainNode.disconnect();
+    oscillator = null;
+    gainNode = null;
+  }
+}
+
+// 彈性回彈 + 豆豆眼 + 嘴巴
+function rebound() {
+  const interval = setInterval(() => {
+    size = size - (size - 120) * 0.1;
+    mochi.style.width = size + "px";
+    mochi.style.height = size + "px";
+    mochi.style.borderRadius = 50 + (size-120)*0.1 + "%";
+
+    // 豆豆眼微晃
+    const eyeOffsetX = Math.sin(Date.now()/100)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/120)*2;
+    eyeLeft.style.top = 40 + eyeOffsetY + "%";
+    eyeLeft.style.left = 30 + eyeOffsetX + "%";
+    eyeRight.style.top = 40 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    // 嘴巴微笑
+    mouth.style.width = Math.min((size - 120)*0.3, 20) + "px";
+
+    if (Math.abs(size - 120) < 0.5) {
+      mochi.style.width = "120px";
+      mochi.style.height = "120px";
+      mochi.style.borderRadius = "50%";
+      eyeLeft.style.top = "40%";
+      eyeLeft.style.left = "30%";
+      eyeRight.style.top = "40%";
+      eyeRight.style.left = "55%";
+      mouth.style.width = "0px";
+      clearInterval(interval);
+    }
+  }, 30);
+}
+
+// 拉長功能
+let stretchInterval = null;
+
+function startStretch() {
+  audioCtx.resume();
+  startSoftAh();
+
+  stretchInterval = setInterval(() => {
+    size += 6; // 平均橫縱增長
+    mochi.style.width = size + "px";
+    mochi.style.height = size + "px";
+    mochi.style.borderRadius = 50 + (size-120)*0.1 + "%";
+
+    // 豆豆眼晃動
+    const eyeOffsetX = Math.sin(Date.now()/50)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/60)*2;
+    eyeLeft.style.top = 40 + eyeOffsetY + "%";
+    eyeLeft.style.left = 30 + eyeOffsetX + "%";
+    eyeRight.style.top = 40 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    // 嘴巴微笑
+    mouth.style.width = Math.min((size - 120)*0.3, 20) + "px";
+
+    updatePitch();
+  }, 50);
+}
+
+function stopStretch() {
+  clearInterval(stretchInterval);
+  stopSoftAh();
+  rebound();
+}
+
+// 電腦滑鼠
+mochi.addEventListener("mousedown", e => {
+  e.preventDefault();
+  startStretch();
+});
+document.addEventListener("mouseup", e => {
+  stopStretch();
+});
+
+// 手機觸控
+mochi.addEventListener("touchstart", e => {
+  e.preventDefault();
+  startStretch();
+});
+mochi.addEventListener("touchend", e => {
+  e.preventDefault();
+  stopStretch();
+});
+mochi.addEventListener("touchcancel", e => {
+  e.preventDefault();
+  stopStretch();
+});
+</script>
+
+</body>
+</html>
