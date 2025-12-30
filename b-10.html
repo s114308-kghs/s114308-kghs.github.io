@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>麻糬永遠最上層</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body { 
+  margin:0; 
+  height:100vh; 
+  font-family:sans-serif; 
+  overflow:hidden; 
+  background: linear-gradient(to bottom, #fff7e8 0%, #fde2e2 60%, #f5d0a9 100%);
+}
+
+#scene { position:relative; width:100%; height:100vh; overflow:hidden; }
+
+/* 櫻花花瓣 */
+.sakura {
+  position:absolute;
+  width:15px;
+  height:15px;
+  background:pink;
+  clip-path: polygon(50% 0%, 60% 35%, 100% 35%, 70% 60%, 80% 100%, 50% 75%, 20% 100%, 30% 60%, 0 35%, 40% 35%);
+  opacity:0.8;
+  pointer-events:none;
+  transform-origin:center;
+}
+
+/* 木碗 */
+#usu { 
+  position:absolute; 
+  width:220px; 
+  height:140px; 
+  background:#d6a76a; 
+  border-radius:50%/30%; 
+  bottom:0; 
+  left:50%; 
+  transform:translateX(-50%); 
+  z-index:1; 
+}
+
+/* 麻糬 */
+#mochi { 
+  width:80px; 
+  height:80px; 
+  background:pink; 
+  border-radius:50%; 
+  box-shadow: inset -5px -5px 15px rgba(255,255,255,0.5), inset 5px 5px 15px rgba(0,0,0,0.1); 
+  position:fixed; 
+  bottom:50px; 
+  left:50%; 
+  transform:translateX(-50%); 
+  z-index:9999; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center; 
+  touch-action:none; 
+  user-select:none; 
+  transition:width 0.05s,height 0.05s,border-radius 0.05s, transform 0.3s, opacity 0.3s; 
+}
+
+.eye { 
+  position:absolute; 
+  width:10px; 
+  height:10px; 
+  background:black; 
+  border-radius:50%; 
+  top:35%; 
+  left:25%; 
+  transition:all 0.05s; 
+}
+.eye.right { left:55%; }
+
+.mouth { 
+  position:absolute; 
+  width:0; 
+  height:3px; 
+  border-radius:2px; 
+  background:black; 
+  bottom:25%; 
+  left:50%; 
+  transform:translateX(-50%); 
+  transition:width 0.05s; 
+}
+
+.piece { 
+  position:absolute; 
+  width:20px; 
+  height:20px; 
+  background:pink; 
+  border-radius:50%; 
+  z-index:500; 
+  pointer-events:none; 
+}
+
+#colorPicker { 
+  position:fixed; 
+  top:10px; 
+  left:10px; 
+  z-index:10000; 
+  width:60px; 
+  height:40px; 
+  border:none; 
+  border-radius:8px; 
+}
+
+p { text-align:center; color:#555; font-size:14px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<input type="color" id="colorPicker">
+<div id="scene">
+  <div id="usu"></div>
+  <div id="mochi">
+    <div class="eye left"></div>
+    <div class="eye right"></div>
+    <div class="mouth"></div>
+  </div>
+</div>
+<p>拉麻糬到非常大才爆炸，麻糬永遠在最上層，調色器不會擋住它！</p>
+
+<script>
+const mochi = document.getElementById("mochi");
+const colorPicker = document.getElementById("colorPicker");
+const eyeLeft = mochi.querySelector(".eye.left");
+const eyeRight = mochi.querySelector(".eye.right");
+const mouth = mochi.querySelector(".mouth");
+const scene = document.getElementById("scene");
+
+colorPicker.addEventListener("input", e => { mochi.style.background = e.target.value; });
+
+let size = 80;
+const MAX_SIZE = 800;
+let stretchInterval = null;
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let oscillator = null;
+
+function startSoftAh(){
+  if(!oscillator){
+    oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.type="sine";
+    oscillator.frequency.value=180;
+    gainNode.gain.value=0.12;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+    oscillator.gainNode = gainNode;
+  }
+}
+
+function updatePitch(){
+  if(oscillator){
+    oscillator.frequency.value = 180 + (size-80)*0.3;
+    oscillator.gainNode.gain.value = 0.12 + Math.sin(Date.now()/100)*0.02;
+  }
+}
+
+function stopSoftAh(){
+  if(oscillator){
+    oscillator.stop();
+    oscillator.disconnect();
+    oscillator.gainNode.disconnect();
+    oscillator=null;
+  }
+}
+
+function playBoom(){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type="square";
+  osc.frequency.setValueAtTime(60, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime+0.3);
+  gain.gain.setValueAtTime(1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3);
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime+0.3);
+}
+
+function explodeMochi(){
+  playBoom();
+  const rect = mochi.getBoundingClientRect();
+  const centerX = rect.left + rect.width/2;
+  const centerY = rect.top + rect.height/2;
+  for(let i=0;i<12;i++){
+    const p = document.createElement("div");
+    p.className="piece";
+    p.style.background=mochi.style.background;
+    p.style.left=centerX+"px";
+    p.style.top=centerY+"px";
+    scene.appendChild(p);
+    const angle=Math.random()*2*Math.PI;
+    const distance=80+Math.random()*120;
+    p.animate([
+      { transform:`translate(0,0)`, opacity:1 },
+      { transform:`translate(${Math.cos(angle)*distance}px,${-Math.sin(angle)*distance}px)`, opacity:0 }
+    ],{duration:600, easing:"ease-out"});
+    setTimeout(()=>p.remove(),600);
+  }
+  mochi.style.width="80px";
+  mochi.style.height="80px";
+  mochi.style.borderRadius="50%";
+  size=80;
+}
+
+function rebound(){
+  const interval = setInterval(()=>{
+    size = size - (size-80)*0.1;
+    mochi.style.width=size+"px";
+    mochi.style.height=size+"px";
+    mochi.style.borderRadius=50+(size-80)*0.1+"%";
+
+    const eyeOffsetX = Math.sin(Date.now()/100)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/120)*2;
+    eyeLeft.style.top = 35 + eyeOffsetY + "%";
+    eyeLeft.style.left = 25 + eyeOffsetX + "%";
+    eyeRight.style.top = 35 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    mouth.style.width=Math.min((size-80)*0.4,20)+"px";
+
+    if(Math.abs(size-80)<0.5){
+      mochi.style.width="80px";
+      mochi.style.height="80px";
+      mochi.style.borderRadius="50%";
+      eyeLeft.style.top="35%";
+      eyeLeft.style.left="25%";
+      eyeRight.style.top="35%";
+      eyeRight.style.left="55%";
+      mouth.style.width="0px";
+      clearInterval(interval);
+    }
+  },30);
+}
+
+function startStretch(){
+  audioCtx.resume();
+  startSoftAh();
+  stretchInterval = setInterval(()=>{
+    size += 6; 
+    if(size>=MAX_SIZE){
+      explodeMochi();
+      stopStretch();
+      return;
+    }
+    mochi.style.width=size+"px";
+    mochi.style.height=size+"px";
+    mochi.style.borderRadius=50+(size-80)*0.1+"%";
+
+    const eyeOffsetX = Math.sin(Date.now()/50)*2; 
+    const eyeOffsetY = Math.sin(Date.now()/60)*2;
+    eyeLeft.style.top = 35 + eyeOffsetY + "%";
+    eyeLeft.style.left = 25 + eyeOffsetX + "%";
+    eyeRight.style.top = 35 + eyeOffsetY + "%";
+    eyeRight.style.left = 55 + eyeOffsetX + "%";
+
+    mouth.style.width=Math.min((size-80)*0.4,20)+"px";
+
+    updatePitch();
+  },50);
+}
+
+function stopStretch(){
+  clearInterval(stretchInterval);
+  stopSoftAh();
+  rebound();
+}
+
+mochi.addEventListener("mousedown",e=>{e.preventDefault(); startStretch();});
+document.addEventListener("mouseup",stopStretch);
+document.addEventListener("mouseleave",stopStretch);
+mochi.addEventListener("touchstart",e=>{e.preventDefault(); startStretch();});
+mochi.addEventListener("touchend",stopStretch);
+mochi.addEventListener("touchcancel",stopStretch);
+
+/* 精緻櫻花飄落 */
+function createSakura(){
+  const sakura = document.createElement("div");
+  sakura.className="sakura";
+  const size = 8 + Math.random()*15;
+  sakura.style.width=size+"px";
+  sakura.style.height=size+"px";
+  sakura.style.left=Math.random()*window.innerWidth+"px";
+  sakura.style.top="-20px";
+  sakura.style.opacity = 0.5 + Math.random()*0.5;
+  sakura.style.transform = `rotate(${Math.random()*360}deg)`;
+  scene.appendChild(sakura);
+
+  let topPos = -20;
+  let sway = Math.random()*2-1; // 左右搖擺
+  let rotateSpeed = Math.random()*3-1.5; // 自旋
+  const fall = setInterval(()=>{
+    topPos += 1 + Math.random()*2;
+    sakura.style.top = topPos + "px";
+    sakura.style.left = parseFloat(sakura.style.left) + sway + "px";
+    sakura.style.transform = `rotate(${parseFloat(sakura.style.transform.replace(/[^\d.-]/g,''))+rotateSpeed}deg)`;
+    if(topPos > window.innerHeight){
+      clearInterval(fall);
+      sakura.remove();
+    }
+  },30);
+}
+
+setInterval(createSakura,200);
+</script>
+
+</body>
+</html>
